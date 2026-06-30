@@ -14,6 +14,7 @@ export async function createTournament(groupId: string, formData: FormData) {
   const category = String(formData.get("category") || "").trim() || null;
   const game_format = Number(formData.get("game_format") || 6);
   const tie_break = formData.get("tie_break") === "on";
+  const format = String(formData.get("format") || "round_robin");
   if (!name) return;
 
   const {
@@ -31,6 +32,7 @@ export async function createTournament(groupId: string, formData: FormData) {
       category,
       game_format,
       tie_break,
+      format,
       created_by: user?.id,
       status: "draft",
     })
@@ -158,6 +160,111 @@ export async function finishTournament(groupId: string, tournamentId: string) {
   await supabase
     .from("tournaments")
     .update({ status: "finished" })
+    .eq("id", tournamentId);
+  revalidatePath(`/app/groups/${groupId}/tournaments/${tournamentId}`);
+}
+
+// ---------- Modo manual: admin cria duplas e jogos na mão ----------
+
+export async function createTeamManual(
+  groupId: string,
+  tournamentId: string,
+  player1Id: string,
+  player2Id: string
+) {
+  const supabase = await createClient();
+  if (!player1Id || !player2Id || player1Id === player2Id) {
+    return { error: "Escolha dois jogadores diferentes." };
+  }
+  const { data: existing } = await supabase
+    .from("teams")
+    .select("id")
+    .eq("tournament_id", tournamentId);
+  const seed = (existing?.length ?? 0) + 1;
+
+  const { error } = await supabase.from("teams").insert({
+    tournament_id: tournamentId,
+    player1_id: player1Id,
+    player2_id: player2Id,
+    seed,
+  });
+  if (error) return { error: error.message };
+
+  await supabase
+    .from("tournaments")
+    .update({ status: "ongoing" })
+    .eq("id", tournamentId)
+    .eq("status", "draft");
+
+  revalidatePath(`/app/groups/${groupId}/tournaments/${tournamentId}`);
+  return { ok: true };
+}
+
+export async function deleteTeamManual(
+  groupId: string,
+  tournamentId: string,
+  teamId: string
+) {
+  const supabase = await createClient();
+  await supabase.from("teams").delete().eq("id", teamId);
+  revalidatePath(`/app/groups/${groupId}/tournaments/${tournamentId}`);
+}
+
+export async function createMatchManual(
+  groupId: string,
+  tournamentId: string,
+  teamAId: string,
+  teamBId: string
+) {
+  const supabase = await createClient();
+  if (!teamAId || !teamBId || teamAId === teamBId) {
+    return { error: "Escolha duas duplas diferentes." };
+  }
+  const { data: existing } = await supabase
+    .from("matches")
+    .select("play_order")
+    .eq("tournament_id", tournamentId);
+  const playOrder = existing?.length ?? 0;
+
+  const { error } = await supabase.from("matches").insert({
+    tournament_id: tournamentId,
+    phase: "manual",
+    team_a_id: teamAId,
+    team_b_id: teamBId,
+    play_order: playOrder,
+    status: "scheduled",
+  });
+  if (error) return { error: error.message };
+  revalidatePath(`/app/groups/${groupId}/tournaments/${tournamentId}`);
+  return { ok: true };
+}
+
+export async function deleteMatchManual(
+  groupId: string,
+  tournamentId: string,
+  matchId: string
+) {
+  const supabase = await createClient();
+  await supabase.from("matches").delete().eq("id", matchId);
+  revalidatePath(`/app/groups/${groupId}/tournaments/${tournamentId}`);
+}
+
+export async function deleteTournament(groupId: string, tournamentId: string) {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("tournaments")
+    .delete()
+    .eq("id", tournamentId);
+  if (error) throw new Error(error.message);
+  revalidatePath(`/app/groups/${groupId}/tournaments`);
+  redirect(`/app/groups/${groupId}/tournaments`);
+}
+
+export async function reopenTournament(groupId: string, tournamentId: string) {
+  const supabase = await createClient();
+  await supabase
+    .from("tournaments")
+    .update({ status: "ongoing" })
     .eq("id", tournamentId);
   revalidatePath(`/app/groups/${groupId}/tournaments/${tournamentId}`);
 }

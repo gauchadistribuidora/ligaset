@@ -24,6 +24,18 @@ export default async function NewTournamentPage({
           <input name="name" required placeholder="Ex: Torneio de Sábado" className="input" />
         </div>
 
+        <div>
+          <label className="label">Tipo de torneio</label>
+          <select name="format" defaultValue="round_robin" className="input">
+            <option value="round_robin">Todos contra todos (sorteio automático)</option>
+            <option value="manual">Manual (eu monto as duplas e os jogos)</option>
+          </select>
+          <p className="mt-1 text-xs text-slate-400">
+            No modo manual você cria as duplas e os jogos na mão. Mais formatos
+            (grupos + mata-mata, eliminatória) chegam em breve.
+          </p>
+        </div>
+
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="label">Data</label>

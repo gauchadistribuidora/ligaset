@@ -3,7 +3,10 @@ import { PageHeader, EmptyState } from "@/components/ui";
 import ParticipantsPicker from "@/components/ParticipantsPicker";
 import DrawButton from "@/components/DrawButton";
 import MatchCard from "@/components/MatchCard";
+import MatchDeleteButton from "@/components/MatchDeleteButton";
 import FinishButton from "@/components/FinishButton";
+import ManualBuilder from "@/components/ManualBuilder";
+import DeleteTournamentButton from "@/components/DeleteTournamentButton";
 import { shortDate } from "@/lib/format";
 import { notFound } from "next/navigation";
 
@@ -59,18 +62,27 @@ export default async function TournamentDetail({
   const hasMatches = normMatches.length > 0;
 
   const standings = computeStandings(normMatches, teamsById);
+  const isManual = tournament.format === "manual";
+  const canEdit = isAdmin && tournament.status !== "finished";
 
   return (
     <div className="space-y-6">
       <PageHeader
         title={tournament.name}
-        subtitle={`${shortDate(tournament.date)}${
-          tournament.location ? " • " + tournament.location : ""
-        } • Set até ${tournament.game_format} games`}
+        subtitle={`${isManual ? "Manual" : "Todos contra todos"} • ${shortDate(
+          tournament.date
+        )}${tournament.location ? " • " + tournament.location : ""} • Set até ${
+          tournament.game_format
+        } games`}
         back={`/app/groups/${id}/tournaments`}
+        action={
+          isAdmin ? (
+            <DeleteTournamentButton groupId={id} tournamentId={tid} />
+          ) : undefined
+        }
       />
 
-      {isAdmin && tournament.status !== "finished" && (
+      {canEdit && !isManual && (
         <ParticipantsPicker
           groupId={id}
           tournamentId={tid}
@@ -80,12 +92,21 @@ export default async function TournamentDetail({
         />
       )}
 
-      {isAdmin && tournament.status !== "finished" && (
+      {canEdit && !isManual && (
         <DrawButton
           groupId={id}
           tournamentId={tid}
           hasMatches={hasMatches}
           playerCount={selectedIds.length}
+        />
+      )}
+
+      {canEdit && isManual && (
+        <ManualBuilder
+          groupId={id}
+          tournamentId={tid}
+          members={members ?? []}
+          teams={teams ?? []}
         />
       )}
 
@@ -128,20 +149,28 @@ export default async function TournamentDetail({
             <h3 className="mb-2 font-bold text-slate-800">🎾 Jogos</h3>
             <div className="space-y-3">
               {normMatches.map((m) => (
-                <MatchCard
-                  key={m.id}
-                  groupId={id}
-                  tournamentId={tid}
-                  match={m}
-                  teamsById={teamsById}
-                  canEdit={isAdmin && tournament.status !== "finished"}
-                  maxGames={tournament.game_format + (tournament.tie_break ? 1 : 0)}
-                />
+                <div key={m.id} className="space-y-1">
+                  <MatchCard
+                    groupId={id}
+                    tournamentId={tid}
+                    match={m}
+                    teamsById={teamsById}
+                    canEdit={canEdit}
+                    maxGames={tournament.game_format + (tournament.tie_break ? 1 : 0)}
+                  />
+                  {canEdit && isManual && (
+                    <MatchDeleteButton
+                      groupId={id}
+                      tournamentId={tid}
+                      matchId={m.id}
+                    />
+                  )}
+                </div>
               ))}
             </div>
           </section>
 
-          {isAdmin && tournament.status !== "finished" && (
+          {canEdit && (
             <FinishButton groupId={id} tournamentId={tid} />
           )}
         </>
