@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { getGroupContext } from "@/lib/data";
 import { Avatar, EmptyState } from "@/components/ui";
 
@@ -62,12 +63,15 @@ export default async function RankingPage({
                   </span>
                 </td>
                 <td>
-                  <div className="flex items-center gap-2">
+                  <Link
+                    href={`/app/groups/${id}/jogador/${r.member_id}`}
+                    className="flex items-center gap-2"
+                  >
                     <Avatar name={r.full_name} url={r.avatar_url} size={28} />
-                    <span className="truncate font-semibold">
+                    <span className="truncate font-semibold text-court-700 underline-offset-2 hover:underline">
                       {r.full_name || "Jogador"}
                     </span>
-                  </div>
+                  </Link>
                 </td>
                 <td className="px-1 text-center text-slate-500">{r.games_played}</td>
                 <td className="px-1 text-center font-semibold text-court-600">{r.wins}</td>
@@ -85,8 +89,8 @@ export default async function RankingPage({
         </table>
       </div>
       <p className="px-1 text-xs text-slate-400">
-        J = jogos, V = vitórias, D = derrotas, SG = saldo de games. Vitória = 1
-        ponto. Desempate: pontos, saldo de games e vitórias.
+        Toque no nome do jogador para ver o histórico (parceiro, rival, sequência).
+        J = jogos, V = vitórias, D = derrotas, SG = saldo de games.
       </p>
     </div>
   );
