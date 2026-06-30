@@ -81,6 +81,10 @@ export default async function ProfilePage() {
         <button className="btn-primary w-full">Salvar</button>
       </form>
 
+      <a href="/app/definir-senha" className="btn-ghost w-full">
+        🔑 Criar / alterar senha
+      </a>
+
       <form action="/auth/signout" method="post">
         <button className="btn-ghost w-full !text-rose-500">Sair da conta</button>
       </form>

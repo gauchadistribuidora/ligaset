@@ -3,7 +3,12 @@
 import { useState, useTransition } from "react";
 import { Avatar } from "@/components/ui";
 import { ROLE_LABEL } from "@/lib/format";
-import { updateMember, removeMember, invitePlayer } from "@/app/actions/groups";
+import {
+  updateMember,
+  removeMember,
+  invitePlayer,
+  updatePlayer,
+} from "@/app/actions/groups";
 
 export default function MemberRow({
   groupId,
@@ -18,7 +23,12 @@ export default function MemberRow({
 }) {
   const [pending, start] = useTransition();
   const [invited, setInvited] = useState(false);
+  const [editing, setEditing] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
+
+  const [name, setName] = useState(member.name || "");
+  const [phone, setPhone] = useState(member.phone || "");
+  const [email, setEmail] = useState(member.email || "");
 
   const displayName = member.name || member.profile?.full_name || "Jogador";
   const linked = !!member.user_id;
@@ -27,11 +37,17 @@ export default function MemberRow({
     setMsg(null);
     start(async () => {
       const res = await invitePlayer(groupId, member.id, window.location.origin);
-      if (res?.ok) {
-        setInvited(true);
-      } else {
-        setMsg(res?.error || "Erro ao convidar.");
-      }
+      if (res?.ok) setInvited(true);
+      else setMsg(res?.error || "Erro ao convidar.");
+    });
+  }
+
+  function saveEdit() {
+    setMsg(null);
+    start(async () => {
+      const res = await updatePlayer(groupId, member.id, { name, phone, email });
+      if (res?.ok) setEditing(false);
+      else setMsg(res?.error || "Erro ao salvar.");
     });
   }
 
@@ -53,15 +69,22 @@ export default function MemberRow({
               defaultValue={member.role}
               disabled={pending}
               onChange={(e) =>
-                start(() =>
-                  updateMember(groupId, member.id, { role: e.target.value })
-                )
+                start(async () => {
+                  await updateMember(groupId, member.id, { role: e.target.value });
+                })
               }
               className="rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs"
             >
               <option value="player">Jogador</option>
               <option value="admin">Admin</option>
             </select>
+            <button
+              onClick={() => setEditing((v) => !v)}
+              className="rounded-lg px-2 py-1 text-xs text-slate-500"
+              aria-label="Editar"
+            >
+              ✎
+            </button>
             <button
               disabled={pending}
               onClick={() => {
@@ -80,7 +103,39 @@ export default function MemberRow({
         )}
       </div>
 
-      {canManage && !linked && (
+      {canManage && editing && (
+        <div className="mt-3 space-y-2 border-t border-slate-100 pt-3">
+          <input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Nome"
+            className="input !py-2"
+          />
+          <input
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            placeholder="Telefone"
+            className="input !py-2"
+          />
+          <input
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            type="email"
+            placeholder="E-mail (para convidar)"
+            className="input !py-2"
+          />
+          <div className="flex gap-2">
+            <button onClick={saveEdit} disabled={pending} className="btn-primary flex-1 !py-2 text-sm">
+              {pending ? "Salvando..." : "Salvar"}
+            </button>
+            <button onClick={() => setEditing(false)} className="btn-ghost !py-2 text-sm">
+              Cancelar
+            </button>
+          </div>
+        </div>
+      )}
+
+      {canManage && !editing && !linked && (
         <div className="mt-2 flex items-center gap-2 pl-[52px]">
           {member.email ? (
             invited ? (
@@ -95,13 +150,17 @@ export default function MemberRow({
               </button>
             )
           ) : (
-            <span className="text-xs text-slate-400">
-              Sem e-mail — adicione um e-mail para convidar
-            </span>
+            <button
+              onClick={() => setEditing(true)}
+              className="text-xs text-slate-400"
+            >
+              Sem e-mail — toque para adicionar e convidar
+            </button>
           )}
-          {msg && <span className="text-xs text-rose-500">{msg}</span>}
         </div>
       )}
+
+      {msg && <p className="mt-2 px-1 text-xs text-rose-500">{msg}</p>}
     </div>
   );
 }

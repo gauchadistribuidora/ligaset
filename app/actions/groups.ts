@@ -93,17 +93,34 @@ export async function addPlayer(groupId: string, formData: FormData) {
 export async function updatePlayer(
   groupId: string,
   memberId: string,
-  formData: FormData
+  patch: { name?: string; phone?: string; email?: string }
 ) {
   const supabase = await createClient();
-  const name = String(formData.get("name") || "").trim();
-  const phone = String(formData.get("phone") || "").trim() || null;
-  const email = String(formData.get("email") || "").trim().toLowerCase() || null;
+  const update: any = {};
+  if (patch.name !== undefined) update.name = patch.name.trim() || null;
+  if (patch.phone !== undefined) update.phone = patch.phone.trim() || null;
+  if (patch.email !== undefined)
+    update.email = patch.email.trim().toLowerCase() || null;
+
+  // se adicionou um e-mail que já é de um usuário, vincula
+  if (update.email) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("id")
+      .ilike("email", update.email)
+      .maybeSingle();
+    if (profile) update.user_id = profile.id;
+  }
+
   const { error } = await supabase
     .from("group_members")
-    .update({ name, phone, email })
+    .update(update)
     .eq("id", memberId);
-  if (error) return { error: error.message };
+  if (error) {
+    if (error.code === "23505")
+      return { error: "Já existe um jogador com esse e-mail no grupo." };
+    return { error: error.message };
+  }
   revalidatePath(`/app/groups/${groupId}/members`);
   return { ok: true };
 }
@@ -125,7 +142,7 @@ export async function invitePlayer(
 
   const { error } = await supabase.auth.signInWithOtp({
     email: member.email,
-    options: { emailRedirectTo: `${origin}/auth/callback?next=/app` },
+    options: { emailRedirectTo: `${origin}/auth/callback?next=/app/definir-senha` },
   });
   if (error) return { error: error.message };
   return { ok: true };
