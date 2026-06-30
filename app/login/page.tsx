@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { Logo, Credit } from "@/components/Logo";
 
 export default function LoginPage() {
   const supabase = createClient();
@@ -94,15 +93,18 @@ export default function LoginPage() {
   return (
     <main className="min-h-dvh bg-court-gradient">
       <div className="mx-auto flex min-h-dvh max-w-md flex-col justify-center px-6 py-12">
-        <div className="mb-8 text-center text-white">
-          <Logo tone="light" className="text-4xl" tagline />
-          <h1 className="mt-4 text-2xl font-extrabold">Bem-vindo ao Ligaset</h1>
-          <p className="mt-1 text-sm text-white/60">
-            Entre para gerenciar seus grupos e torneios
-          </p>
-        </div>
-
         <div className="card">
+          <div
+            className="mx-auto mb-4 w-full overflow-hidden rounded-xl"
+            style={{ aspectRatio: "5 / 2" }}
+          >
+            <img
+              src="/logo.png"
+              alt="LigaSet"
+              className="h-full w-full object-cover object-center"
+            />
+          </div>
+
           {sent ? (
             <div className="text-center">
               <div className="text-4xl">📩</div>
@@ -193,14 +195,6 @@ export default function LoginPage() {
               {info && <p className="mt-3 text-center text-sm text-court-600">{info}</p>}
             </>
           )}
-        </div>
-
-        <p className="mt-6 text-center text-xs text-white/50">
-          Ao continuar você concorda em usar o Ligaset para gestão do seu grupo.
-        </p>
-
-        <div className="mt-2">
-          <Credit tone="light" />
         </div>
       </div>
     </main>

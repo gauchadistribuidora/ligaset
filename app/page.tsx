@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
-import { Logo, Credit } from "@/components/Logo";
 
 const FEATURES = [
   { icon: "👥", title: "Grupos & comunidade", desc: "Crie grupos, convide jogadores e defina permissões." },
@@ -19,19 +18,21 @@ export default async function Landing() {
 
   return (
     <main className="min-h-dvh bg-court-gradient text-white">
-      <div className="mx-auto flex min-h-dvh max-w-md flex-col px-6 pb-10 pt-14">
-        <div className="flex items-center gap-2">
-          <Logo tone="light" className="text-2xl" />
+      <div className="mx-auto flex min-h-dvh max-w-md flex-col px-6 pb-10 pt-10">
+        <div className="rounded-2xl bg-white p-3">
+          <div className="mx-auto w-full overflow-hidden" style={{ aspectRatio: "5 / 2" }}>
+            <img src="/logo.png" alt="LigaSet" className="h-full w-full object-cover object-center" />
+          </div>
         </div>
 
-        <div className="mt-16 flex-1">
+        <div className="mt-12 flex-1">
           <h1 className="text-4xl font-black leading-tight">
             O sistema operacional do seu{" "}
-            <span className="text-court-400">beach tennis</span>.
+            <span className="text-court-400">esporte</span>.
           </h1>
           <p className="mt-4 text-base text-white/70">
             Grupos, torneios, rankings e mensalidades em um só app. Organize a
-            sua arena ou a sua turma de quinta como um profissional.
+            sua arena ou a sua turma como um profissional.
           </p>
 
           <div className="mt-8 grid grid-cols-2 gap-3">
@@ -45,14 +46,10 @@ export default async function Landing() {
           </div>
         </div>
 
-        <div className="mt-10 space-y-3">
+        <div className="mt-10">
           <Link href="/login" className="btn-primary w-full">
             Entrar / Criar conta
           </Link>
-          <p className="text-center text-xs text-white/50">
-            Beach tennis • Ranking • Comunidade
-          </p>
-          <Credit tone="light" />
         </div>
       </div>
     </main>
