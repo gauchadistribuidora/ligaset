@@ -52,9 +52,7 @@ export default function PaymentRow({
               defaultValue={payment.status}
               disabled={pending}
               onChange={(e) =>
-                start(async () => {
-                  await setPaymentStatus(groupId, payment.id, e.target.value);
-                })
+                start(() => setPaymentStatus(groupId, payment.id, e.target.value))
               }
               className={`rounded-lg border-0 px-2 py-1.5 text-xs font-semibold ${PAYMENT_STYLE[payment.status]}`}
             >

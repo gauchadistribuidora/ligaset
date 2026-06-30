@@ -2,6 +2,7 @@ import { getGroupContext } from "@/lib/data";
 import { Stat, EmptyState } from "@/components/ui";
 import { brl, monthLabel } from "@/lib/format";
 import GenerateChargesForm from "@/components/GenerateChargesForm";
+import AddPaymentForm from "@/components/AddPaymentForm";
 import PaymentRow from "@/components/PaymentRow";
 
 export default async function PaymentsPage({
@@ -10,26 +11,33 @@ export default async function PaymentsPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const { supabase, user, isAdmin, settings } = await getGroupContext(id);
+  const { supabase, isAdmin, settings } = await getGroupContext(id);
 
-  const query = supabase
+  const { data: payments } = await supabase
     .from("payments")
-    .select("*, profile:profiles(id, full_name, avatar_url)")
+    .select(
+      "*, member:group_members(id, name, profile:profiles(full_name, avatar_url))"
+    )
     .eq("group_id", id)
     .order("reference_month", { ascending: false });
-
-  // RLS já filtra: admin vê tudo, jogador vê só as suas.
-  const { data: payments } = await query;
   const rows = payments ?? [];
 
-  // resumo do mês mais recente
+  // jogadores do grupo (para a cobrança avulsa)
+  const { data: members } = isAdmin
+    ? await supabase
+        .from("group_members")
+        .select("id, name")
+        .eq("group_id", id)
+        .eq("status", "active")
+        .order("name")
+    : { data: [] as any[] };
+
   const received = rows
     .filter((p) => p.status === "paid")
     .reduce((s, p) => s + Number(p.amount), 0);
   const pending = rows.filter((p) => p.status === "pending").length;
   const overdue = rows.filter((p) => p.status === "overdue").length;
 
-  // agrupa por mês
   const byMonth: Record<string, any[]> = {};
   for (const p of rows) {
     (byMonth[p.reference_month] ??= []).push(p);
@@ -53,18 +61,21 @@ export default async function PaymentsPage({
                 "Defina o valor nas configurações ⚙️."}
             </p>
           )}
-          <GenerateChargesForm groupId={id} />
+          <div className="space-y-2">
+            <GenerateChargesForm groupId={id} />
+            <AddPaymentForm groupId={id} members={members ?? []} />
+          </div>
         </>
       )}
 
       {months.length ? (
-        months.map((m) => (
-          <section key={m}>
+        months.map((mo) => (
+          <section key={mo}>
             <h3 className="mb-2 font-bold capitalize text-slate-800">
-              {monthLabel(m)}
+              {monthLabel(mo)}
             </h3>
             <div className="card divide-y divide-slate-100 !p-0">
-              {byMonth[m].map((p) => (
+              {byMonth[mo].map((p) => (
                 <PaymentRow
                   key={p.id}
                   groupId={id}
@@ -81,7 +92,7 @@ export default async function PaymentsPage({
           title="Sem mensalidades"
           desc={
             isAdmin
-              ? "Gere as cobranças do mês para começar a controlar os pagamentos."
+              ? "Gere as cobranças do mês ou adicione uma cobrança avulsa para começar."
               : "Você não tem mensalidades registradas neste grupo."
           }
         />
