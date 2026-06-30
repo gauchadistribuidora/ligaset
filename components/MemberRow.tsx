@@ -2,12 +2,14 @@
 
 import { useState, useTransition } from "react";
 import { Avatar } from "@/components/ui";
+import ImageUpload from "@/components/ImageUpload";
 import { ROLE_LABEL } from "@/lib/format";
 import {
   updateMember,
   removeMember,
   invitePlayer,
   updatePlayer,
+  setPlayerAvatar,
 } from "@/app/actions/groups";
 
 export default function MemberRow({
@@ -54,7 +56,11 @@ export default function MemberRow({
   return (
     <div className="px-4 py-3">
       <div className="flex items-center gap-3">
-        <Avatar name={displayName} url={member.profile?.avatar_url} size={40} />
+        <Avatar
+          name={displayName}
+          url={member.avatar_url || member.profile?.avatar_url}
+          size={40}
+        />
         <div className="min-w-0 flex-1">
           <p className="truncate font-semibold">{displayName}</p>
           <p className="truncate text-xs text-slate-400">
@@ -105,6 +111,15 @@ export default function MemberRow({
 
       {canManage && editing && (
         <div className="mt-3 space-y-2 border-t border-slate-100 pt-3">
+          <ImageUpload
+            bucket="avatars"
+            path={`${groupId}/${member.id}`}
+            currentUrl={member.avatar_url || member.profile?.avatar_url}
+            name={displayName}
+            size={56}
+            label="Foto do jogador"
+            onSave={setPlayerAvatar.bind(null, groupId, member.id)}
+          />
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}

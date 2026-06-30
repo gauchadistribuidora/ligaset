@@ -1,7 +1,8 @@
 import { getGroupContext } from "@/lib/data";
 import { PageHeader } from "@/components/ui";
 import ColorPicker from "@/components/ColorPicker";
-import { updateGroup, updateSettings } from "@/app/actions/groups";
+import ImageUpload from "@/components/ImageUpload";
+import { updateGroup, updateSettings, setGroupLogo } from "@/app/actions/groups";
 import { MODALITY_OPTIONS } from "@/lib/format";
 import { notFound } from "next/navigation";
 
@@ -23,6 +24,19 @@ export default async function SettingsPage({
 
       <form action={saveGroup} className="card space-y-4">
         <h3 className="font-bold text-slate-800">Identidade do grupo</h3>
+        <div>
+          <label className="label">Logo do grupo</label>
+          <ImageUpload
+            bucket="logos"
+            path={id}
+            currentUrl={group.logo_url}
+            name={group.name}
+            shape="square"
+            size={72}
+            label="Enviar logo"
+            onSave={setGroupLogo.bind(null, id)}
+          />
+        </div>
         <div>
           <label className="label">Nome</label>
           <input name="name" defaultValue={group.name} required className="input" />

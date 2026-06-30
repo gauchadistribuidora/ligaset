@@ -25,12 +25,22 @@ export default async function GroupLayout({
           ← Grupos
         </Link>
         <div className="mt-2 flex items-center justify-between">
-          <div>
+          <div className="flex items-center gap-3">
+            {group.logo_url && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={group.logo_url}
+                alt={group.name}
+                className="h-12 w-12 rounded-xl object-cover ring-2 ring-white/30"
+              />
+            )}
+            <div>
             <h1 className="text-2xl font-black leading-tight">{group.name}</h1>
             <span className="mt-1 inline-block rounded-full bg-white/15 px-2 py-0.5 text-xs font-semibold backdrop-blur">{MODALITY_LABEL[group.modality] || "Beach Tennis"}</span>
             {group.description && (
               <p className="text-sm text-white/70">{group.description}</p>
             )}
+            </div>
           </div>
           {isAdmin && (
             <Link

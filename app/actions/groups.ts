@@ -150,6 +150,32 @@ export async function invitePlayer(
   return { ok: true };
 }
 
+export async function setPlayerAvatar(
+  groupId: string,
+  memberId: string,
+  url: string
+) {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("group_members")
+    .update({ avatar_url: url })
+    .eq("id", memberId);
+  if (error) return { error: error.message };
+  revalidatePath(`/app/groups/${groupId}/members`);
+  return { ok: true };
+}
+
+export async function setGroupLogo(groupId: string, url: string) {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("groups")
+    .update({ logo_url: url })
+    .eq("id", groupId);
+  if (error) return { error: error.message };
+  revalidatePath(`/app/groups/${groupId}`);
+  return { ok: true };
+}
+
 export async function updateMember(
   groupId: string,
   memberId: string,

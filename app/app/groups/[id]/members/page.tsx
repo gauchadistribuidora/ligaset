@@ -13,7 +13,7 @@ export default async function MembersPage({
   const { data: members } = await supabase
     .from("group_members")
     .select(
-      "id, role, status, name, phone, email, user_id, profile:profiles(id, full_name, email, avatar_url)"
+      "id, role, status, name, phone, email, user_id, avatar_url, profile:profiles(id, full_name, email, avatar_url)"
     )
     .eq("group_id", id)
     .order("role", { ascending: true });
