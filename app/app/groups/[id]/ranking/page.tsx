@@ -33,18 +33,20 @@ export default async function RankingPage({
         <table className="w-full text-sm">
           <thead className="text-xs text-slate-400">
             <tr className="border-b border-slate-100">
-              <th className="py-3 pl-4 text-left font-medium">#</th>
+              <th className="py-3 pl-3 text-left font-medium">#</th>
               <th className="text-left font-medium">Jogador</th>
               <th className="px-1 font-medium">J</th>
               <th className="px-1 font-medium">V</th>
+              <th className="px-1 font-medium">D</th>
+              <th className="px-1 font-medium">SG</th>
               <th className="px-1 font-medium">%</th>
-              <th className="py-3 pr-4 font-medium">Pts</th>
+              <th className="py-3 pr-3 font-medium">Pts</th>
             </tr>
           </thead>
           <tbody>
             {ranking.map((r: any, i: number) => (
               <tr key={r.member_id} className="border-b border-slate-50 last:border-0">
-                <td className="py-2.5 pl-4">
+                <td className="py-2.5 pl-3">
                   <span
                     className={`grid h-6 w-6 place-items-center rounded-full text-xs font-black ${
                       i === 0
@@ -68,9 +70,13 @@ export default async function RankingPage({
                   </div>
                 </td>
                 <td className="px-1 text-center text-slate-500">{r.games_played}</td>
-                <td className="px-1 text-center text-slate-500">{r.wins}</td>
+                <td className="px-1 text-center font-semibold text-court-600">{r.wins}</td>
+                <td className="px-1 text-center text-rose-500">{r.losses}</td>
+                <td className="px-1 text-center text-slate-500">
+                  {r.game_diff > 0 ? `+${r.game_diff}` : r.game_diff}
+                </td>
                 <td className="px-1 text-center text-slate-500">{r.win_pct}%</td>
-                <td className="py-2.5 pr-4 text-center font-bold text-court-600">
+                <td className="py-2.5 pr-3 text-center font-bold text-court-600">
                   {r.points}
                 </td>
               </tr>
@@ -79,8 +85,8 @@ export default async function RankingPage({
         </table>
       </div>
       <p className="px-1 text-xs text-slate-400">
-        Pontuação: vitória = 1 ponto. Critérios de desempate: pontos, saldo de
-        games e número de vitórias.
+        J = jogos, V = vitórias, D = derrotas, SG = saldo de games. Vitória = 1
+        ponto. Desempate: pontos, saldo de games e vitórias.
       </p>
     </div>
   );
