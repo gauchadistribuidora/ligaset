@@ -1,17 +1,14 @@
 {
   "name": "Ligaset",
   "short_name": "Ligaset",
-  "description": "Grupos, torneios, rankings e mensalidades de beach tennis.",
+  "description": "Grupos, torneios, rankings e mensalidades. Organize, jogue, ranqueie e evolua.",
   "start_url": "/app",
+  "scope": "/",
   "display": "standalone",
+  "orientation": "portrait",
   "background_color": "#071320",
   "theme_color": "#071320",
   "icons": [
-    {
-      "src": "/icon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
-      "purpose": "any maskable"
-    }
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
   ]
 }
