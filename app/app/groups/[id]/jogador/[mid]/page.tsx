@@ -12,7 +12,7 @@ export default async function PlayerHistory({
 
   const { data: member } = await supabase
     .from("group_members")
-    .select("id, name, profile:profiles(full_name, avatar_url)")
+    .select("id, name, avatar_url, profile:profiles(full_name, avatar_url)")
     .eq("id", mid)
     .eq("group_id", id)
     .maybeSingle();
@@ -116,7 +116,7 @@ export default async function PlayerHistory({
       <PageHeader title="Histórico" back={`/app/groups/${id}/ranking`} />
 
       <div className="card flex items-center gap-4">
-        <Avatar name={memberName} url={prof?.avatar_url} size={56} />
+        <Avatar name={memberName} url={(member as any).avatar_url || prof?.avatar_url} size={56} />
         <div>
           <p className="text-lg font-extrabold">{memberName}</p>
           <p className="text-sm text-slate-400">
