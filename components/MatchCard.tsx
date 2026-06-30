@@ -18,6 +18,7 @@ export default function MatchCard({
   teamsById,
   canEdit,
   maxGames,
+  sets = 1,
 }: {
   groupId: string;
   tournamentId: string;
@@ -25,13 +26,21 @@ export default function MatchCard({
   teamsById: Record<string, any>;
   canEdit: boolean;
   maxGames: number;
+  sets?: number;
 }) {
   const teamA = teamsById[match.team_a_id];
   const teamB = teamsById[match.team_b_id];
   const result = match.result;
+  const multi = sets > 1;
 
-  const [a, setA] = useState<number>(result?.games_a ?? 0);
-  const [b, setB] = useState<number>(result?.games_b ?? 0);
+  const initial: number[][] =
+    result?.set_scores && Array.isArray(result.set_scores)
+      ? result.set_scores
+      : multi
+      ? Array.from({ length: sets }, () => [0, 0])
+      : [[result?.games_a ?? 0, result?.games_b ?? 0]];
+
+  const [scores, setScores] = useState<number[][]>(initial);
   const [editing, setEditing] = useState(false);
   const [pending, start] = useTransition();
 
@@ -39,12 +48,62 @@ export default function MatchCard({
   const winnerA = finished && result.winner_team_id === match.team_a_id;
   const winnerB = finished && result.winner_team_id === match.team_b_id;
 
+  // placar exibido por set
+  const shownA = result
+    ? result.set_scores
+      ? result.set_scores.map((s: number[]) => s[0])
+      : [result.games_a]
+    : null;
+  const shownB = result
+    ? result.set_scores
+      ? result.set_scores.map((s: number[]) => s[1])
+      : [result.games_b]
+    : null;
+
+  function setVal(setIdx: number, side: 0 | 1, val: number) {
+    setScores((prev) => {
+      const next = prev.map((s) => [...s]);
+      next[setIdx][side] = val;
+      return next;
+    });
+  }
+
   function save() {
+    const totalA = scores.reduce((s, x) => s + x[0], 0);
+    const totalB = scores.reduce((s, x) => s + x[1], 0);
+    if (!multi) {
+      start(async () => {
+        await saveResult(groupId, tournamentId, match.id, scores[0][0], scores[0][1]);
+        setEditing(false);
+      });
+      return;
+    }
+    let setsA = 0,
+      setsB = 0;
+    for (const [a, b] of scores) {
+      if (a > b) setsA++;
+      else if (b > a) setsB++;
+    }
+    const winner =
+      setsA > setsB ? match.team_a_id : setsB > setsA ? match.team_b_id : null;
     start(async () => {
-      await saveResult(groupId, tournamentId, match.id, a, b);
+      await saveResult(
+        groupId,
+        tournamentId,
+        match.id,
+        totalA,
+        totalB,
+        scores,
+        winner
+      );
       setEditing(false);
     });
   }
+
+  const tie = multi
+    ? scores.filter((s) => s[0] > s[1]).length ===
+      scores.filter((s) => s[1] > s[0]).length
+    : scores[0][0] === scores[0][1];
 
   return (
     <div className="card !p-4">
@@ -57,32 +116,38 @@ export default function MatchCard({
       </div>
 
       <div className="space-y-1.5">
-        <Row
-          name={teamName(teamA)}
-          score={result ? result.games_a : null}
-          winner={winnerA}
-        />
-        <Row
-          name={teamName(teamB)}
-          score={result ? result.games_b : null}
-          winner={winnerB}
-        />
+        <Row name={teamName(teamA)} scores={shownA} winner={winnerA} />
+        <Row name={teamName(teamB)} scores={shownB} winner={winnerB} />
       </div>
 
       {canEdit && (
         <div className="mt-3 border-t border-slate-100 pt-3">
           {editing ? (
-            <div className="flex items-center justify-center gap-2">
-              <Stepper value={a} setValue={setA} max={maxGames} />
-              <span className="text-slate-300">x</span>
-              <Stepper value={b} setValue={setB} max={maxGames} />
+            <div className="space-y-2">
+              {scores.map((s, i) => (
+                <div key={i} className="flex items-center justify-center gap-2">
+                  {multi && (
+                    <span className="w-10 text-xs text-slate-400">Set {i + 1}</span>
+                  )}
+                  <Stepper value={s[0]} setValue={(v) => setVal(i, 0, v)} max={maxGames} />
+                  <span className="text-slate-300">x</span>
+                  <Stepper value={s[1]} setValue={(v) => setVal(i, 1, v)} max={maxGames} />
+                </div>
+              ))}
               <button
                 onClick={save}
-                disabled={pending || a === b}
-                className="btn-primary !px-3 !py-2 text-xs"
+                disabled={pending || tie}
+                className="btn-primary w-full !py-2 text-xs"
               >
-                {pending ? "..." : "Salvar"}
+                {pending ? "..." : "Salvar placar"}
               </button>
+              {tie && (
+                <p className="text-center text-xs text-rose-400">
+                  {multi
+                    ? "Defina um vencedor (sets desempatados)."
+                    : "O placar não pode terminar empatado."}
+                </p>
+              )}
             </div>
           ) : (
             <button
@@ -92,11 +157,6 @@ export default function MatchCard({
               {finished ? "Editar placar" : "Lançar placar"}
             </button>
           )}
-          {editing && a === b && (
-            <p className="mt-1 text-center text-xs text-rose-400">
-              Placar não pode terminar empatado.
-            </p>
-          )}
         </div>
       )}
     </div>
@@ -105,11 +165,11 @@ export default function MatchCard({
 
 function Row({
   name,
-  score,
+  scores,
   winner,
 }: {
   name: string;
-  score: number | null;
+  scores: number[] | null;
   winner: boolean;
 }) {
   return (
@@ -118,12 +178,17 @@ function Row({
         {winner && "🏆 "}
         {name}
       </span>
-      <span
-        className={`ml-2 grid h-7 w-7 shrink-0 place-items-center rounded-lg text-sm font-bold ${
-          winner ? "bg-court-500 text-white" : "bg-slate-100 text-slate-500"
-        }`}
-      >
-        {score ?? "-"}
+      <span className="ml-2 flex shrink-0 gap-1">
+        {(scores ?? [null]).map((s, i) => (
+          <span
+            key={i}
+            className={`grid h-7 w-7 place-items-center rounded-lg text-sm font-bold ${
+              winner ? "bg-court-500 text-white" : "bg-slate-100 text-slate-500"
+            }`}
+          >
+            {s ?? "-"}
+          </span>
+        ))}
       </span>
     </div>
   );

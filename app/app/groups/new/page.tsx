@@ -1,6 +1,7 @@
 import { PageHeader } from "@/components/ui";
 import { createGroup } from "@/app/actions/groups";
 import ColorPicker from "@/components/ColorPicker";
+import { MODALITY_OPTIONS } from "@/lib/format";
 
 export default function NewGroupPage() {
   return (
@@ -15,6 +16,16 @@ export default function NewGroupPage() {
             placeholder="Ex: Amigos da Quinta"
             className="input"
           />
+        </div>
+        <div>
+          <label className="label">Modalidade</label>
+          <select name="modality" defaultValue="beach" className="input">
+            {MODALITY_OPTIONS.map(([v, l]) => (
+              <option key={v} value={v}>
+                {l}
+              </option>
+            ))}
+          </select>
         </div>
         <div>
           <label className="label">Descrição (opcional)</label>

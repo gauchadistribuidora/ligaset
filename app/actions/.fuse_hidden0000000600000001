@@ -14,12 +14,11 @@ export async function createGroup(formData: FormData) {
   const name = String(formData.get("name") || "").trim();
   const description = String(formData.get("description") || "").trim() || null;
   const color = String(formData.get("color") || "#10b981");
-  const modality = String(formData.get("modality") || "beach");
   if (!name) return;
 
   const { data, error } = await supabase
     .from("groups")
-    .insert({ name, description, color, modality, owner_id: user.id })
+    .insert({ name, description, color, owner_id: user.id })
     .select("id")
     .single();
 
@@ -33,10 +32,9 @@ export async function updateGroup(groupId: string, formData: FormData) {
   const name = String(formData.get("name") || "").trim();
   const description = String(formData.get("description") || "").trim() || null;
   const color = String(formData.get("color") || "#10b981");
-  const modality = String(formData.get("modality") || "beach");
   const { error } = await supabase
     .from("groups")
-    .update({ name, description, color, modality })
+    .update({ name, description, color })
     .eq("id", groupId);
   if (error) throw new Error(error.message);
   revalidatePath(`/app/groups/${groupId}`);

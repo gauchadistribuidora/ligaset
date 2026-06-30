@@ -66,16 +66,30 @@ export default async function NewTournamentPage({
           </select>
         </div>
 
-        <div>
-          <label className="label">Games por set</label>
-          <select name="game_format" defaultValue={String(defFormat)} className="input">
-            <option value="4">Set até 4 games</option>
-            <option value="5">Set até 5 games</option>
-            <option value="6">Set até 6 games</option>
-            <option value="7">Set até 7 games</option>
-            <option value="9">Set até 9 games</option>
-          </select>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="label">Número de sets</label>
+            <select name="sets" defaultValue="1" className="input">
+              <option value="1">1 set</option>
+              <option value="2">2 sets</option>
+              <option value="3">3 sets (melhor de 3)</option>
+              <option value="5">5 sets (melhor de 5)</option>
+            </select>
+          </div>
+          <div>
+            <label className="label">Games por set</label>
+            <select name="game_format" defaultValue={String(defFormat)} className="input">
+              <option value="4">até 4 games</option>
+              <option value="5">até 5 games</option>
+              <option value="6">até 6 games</option>
+              <option value="7">até 7 games</option>
+              <option value="9">até 9 games</option>
+            </select>
+          </div>
         </div>
+        <p className="-mt-2 text-xs text-slate-400">
+          Ex: 2 sets de 6 games. O placar permite lançar o resultado de cada set.
+        </p>
 
         <label className="flex items-center gap-3 text-sm font-medium text-slate-600">
           <input name="tie_break" type="checkbox" defaultChecked className="h-5 w-5 rounded" />

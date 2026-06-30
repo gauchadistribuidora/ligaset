@@ -15,7 +15,6 @@ export async function createTournament(groupId: string, formData: FormData) {
   const game_format = Number(formData.get("game_format") || 6);
   const tie_break = formData.get("tie_break") === "on";
   const format = String(formData.get("format") || "round_robin");
-  const sets = Number(formData.get("sets") || 1);
   if (!name) return;
 
   const {
@@ -34,7 +33,6 @@ export async function createTournament(groupId: string, formData: FormData) {
       game_format,
       tie_break,
       format,
-      sets,
       created_by: user?.id,
       status: "draft",
     })
@@ -137,9 +135,7 @@ export async function saveResult(
   tournamentId: string,
   matchId: string,
   gamesA: number,
-  gamesB: number,
-  setScores: number[][] | null = null,
-  winnerTeamId: string | null = null
+  gamesB: number
 ) {
   const supabase = await createClient();
   const {
@@ -151,8 +147,6 @@ export async function saveResult(
       match_id: matchId,
       games_a: gamesA,
       games_b: gamesB,
-      set_scores: setScores,
-      winner_team_id: winnerTeamId,
       reported_by: user?.id,
     },
     { onConflict: "match_id" }

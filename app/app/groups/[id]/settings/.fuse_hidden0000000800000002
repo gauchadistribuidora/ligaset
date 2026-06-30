@@ -2,7 +2,6 @@ import { getGroupContext } from "@/lib/data";
 import { PageHeader } from "@/components/ui";
 import ColorPicker from "@/components/ColorPicker";
 import { updateGroup, updateSettings } from "@/app/actions/groups";
-import { MODALITY_OPTIONS } from "@/lib/format";
 import { notFound } from "next/navigation";
 
 export default async function SettingsPage({
@@ -26,14 +25,6 @@ export default async function SettingsPage({
         <div>
           <label className="label">Nome</label>
           <input name="name" defaultValue={group.name} required className="input" />
-        </div>
-        <div>
-          <label className="label">Modalidade</label>
-          <select name="modality" defaultValue={group.modality || "beach"} className="input">
-            {MODALITY_OPTIONS.map(([v, l]) => (
-              <option key={v} value={v}>{l}</option>
-            ))}
-          </select>
         </div>
         <div>
           <label className="label">Descrição</label>

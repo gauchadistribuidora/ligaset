@@ -157,6 +157,7 @@ export default async function TournamentDetail({
                     teamsById={teamsById}
                     canEdit={canEdit}
                     maxGames={tournament.game_format + (tournament.tie_break ? 1 : 0)}
+                    sets={tournament.sets ?? 1}
                   />
                   {canEdit && isManual && (
                     <MatchDeleteButton

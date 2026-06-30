@@ -46,3 +46,19 @@ export const ROLE_LABEL: Record<string, string> = {
   admin: "Administrador",
   player: "Jogador",
 };
+
+export const MODALITY_LABEL: Record<string, string> = {
+  beach: "Beach Tennis",
+  padel: "Padel",
+  volei: "Vôlei",
+  futevolei: "Futevôlei",
+  tenis: "Tênis",
+};
+
+export const MODALITY_OPTIONS: [string, string][] = [
+  ["beach", "Beach Tennis"],
+  ["padel", "Padel"],
+  ["volei", "Vôlei"],
+  ["futevolei", "Futevôlei"],
+  ["tenis", "Tênis"],
+];

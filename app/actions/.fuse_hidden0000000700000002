@@ -33,10 +33,9 @@ export async function updateGroup(groupId: string, formData: FormData) {
   const name = String(formData.get("name") || "").trim();
   const description = String(formData.get("description") || "").trim() || null;
   const color = String(formData.get("color") || "#10b981");
-  const modality = String(formData.get("modality") || "beach");
   const { error } = await supabase
     .from("groups")
-    .update({ name, description, color, modality })
+    .update({ name, description, color })
     .eq("id", groupId);
   if (error) throw new Error(error.message);
   revalidatePath(`/app/groups/${groupId}`);
