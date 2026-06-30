@@ -3,13 +3,12 @@
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 
-// Gera/atualiza cobranças do mês para todos os membros ativos do grupo.
 export async function generateMonthlyCharges(
   groupId: string,
   formData: FormData
 ) {
   const supabase = await createClient();
-  const month = String(formData.get("month") || ""); // YYYY-MM
+  const month = String(formData.get("month") || "");
   if (!month) return;
   const referenceMonth = `${month}-01`;
 
@@ -27,7 +26,8 @@ export async function generateMonthlyCharges(
     .from("group_members")
     .select("user_id")
     .eq("group_id", groupId)
-    .eq("status", "active");
+    .eq("status", "active")
+    .not("user_id", "is", null);
 
   const rows = (members ?? []).map((m) => ({
     group_id: groupId,
@@ -41,7 +41,10 @@ export async function generateMonthlyCharges(
   if (rows.length) {
     await supabase
       .from("payments")
-      .upsert(rows, { onConflict: "group_id,user_id,reference_month", ignoreDuplicates: true });
+      .upsert(rows, {
+        onConflict: "group_id,user_id,reference_month",
+        ignoreDuplicates: true,
+      });
   }
   revalidatePath(`/app/groups/${groupId}/payments`);
 }

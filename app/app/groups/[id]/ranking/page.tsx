@@ -43,7 +43,7 @@ export default async function RankingPage({
           </thead>
           <tbody>
             {ranking.map((r: any, i: number) => (
-              <tr key={r.user_id} className="border-b border-slate-50 last:border-0">
+              <tr key={r.member_id} className="border-b border-slate-50 last:border-0">
                 <td className="py-2.5 pl-4">
                   <span
                     className={`grid h-6 w-6 place-items-center rounded-full text-xs font-black ${

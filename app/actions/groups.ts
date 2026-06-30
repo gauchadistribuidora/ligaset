@@ -55,35 +55,79 @@ export async function updateSettings(groupId: string, formData: FormData) {
   revalidatePath(`/app/groups/${groupId}`);
 }
 
-export async function addMemberByEmail(groupId: string, formData: FormData) {
+export async function addPlayer(groupId: string, formData: FormData) {
   const supabase = await createClient();
-  const email = String(formData.get("email") || "").trim().toLowerCase();
-  if (!email) return { error: "Informe um e-mail." };
+  const name = String(formData.get("name") || "").trim();
+  const phone = String(formData.get("phone") || "").trim() || null;
+  const email = String(formData.get("email") || "").trim().toLowerCase() || null;
+  if (!name) return { error: "Informe ao menos o nome do jogador." };
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("id")
-    .ilike("email", email)
-    .maybeSingle();
-
-  if (!profile) {
-    return {
-      error:
-        "Nenhum jogador com esse e-mail ainda. Peça para a pessoa criar a conta no Ligaset primeiro.",
-    };
+  let userId: string | null = null;
+  if (email) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("id")
+      .ilike("email", email)
+      .maybeSingle();
+    userId = profile?.id ?? null;
   }
 
   const { error } = await supabase.from("group_members").insert({
     group_id: groupId,
-    user_id: profile.id,
+    user_id: userId,
+    name,
+    phone,
+    email,
     role: "player",
     status: "active",
   });
   if (error) {
-    if (error.code === "23505") return { error: "Esse jogador já está no grupo." };
+    if (error.code === "23505")
+      return { error: "Já existe um jogador com esse e-mail no grupo." };
     return { error: error.message };
   }
   revalidatePath(`/app/groups/${groupId}/members`);
+  return { ok: true };
+}
+
+export async function updatePlayer(
+  groupId: string,
+  memberId: string,
+  formData: FormData
+) {
+  const supabase = await createClient();
+  const name = String(formData.get("name") || "").trim();
+  const phone = String(formData.get("phone") || "").trim() || null;
+  const email = String(formData.get("email") || "").trim().toLowerCase() || null;
+  const { error } = await supabase
+    .from("group_members")
+    .update({ name, phone, email })
+    .eq("id", memberId);
+  if (error) return { error: error.message };
+  revalidatePath(`/app/groups/${groupId}/members`);
+  return { ok: true };
+}
+
+export async function invitePlayer(
+  groupId: string,
+  memberId: string,
+  origin: string
+) {
+  const supabase = await createClient();
+  const { data: member } = await supabase
+    .from("group_members")
+    .select("email")
+    .eq("id", memberId)
+    .single();
+
+  if (!member?.email)
+    return { error: "Cadastre o e-mail do jogador antes de convidar." };
+
+  const { error } = await supabase.auth.signInWithOtp({
+    email: member.email,
+    options: { emailRedirectTo: `${origin}/auth/callback?next=/app` },
+  });
+  if (error) return { error: error.message };
   return { ok: true };
 }
 

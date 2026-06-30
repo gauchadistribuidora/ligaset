@@ -25,9 +25,12 @@ export interface Group {
 export interface GroupMember {
   id: string;
   group_id: string;
-  user_id: string;
+  user_id: string | null;
   role: MemberRole;
   status: MemberStatus;
+  name: string | null;
+  phone: string | null;
+  email: string | null;
   nickname: string | null;
   level: string | null;
   joined_at: string;
@@ -65,8 +68,6 @@ export interface Team {
   player2_id: string | null;
   name: string | null;
   seed: number | null;
-  player1?: Profile;
-  player2?: Profile;
 }
 
 export interface Match {
@@ -105,7 +106,8 @@ export interface Payment {
 
 export interface RankingRow {
   group_id: string;
-  user_id: string;
+  member_id: string;
+  user_id: string | null;
   full_name: string | null;
   avatar_url: string | null;
   games_played: number;

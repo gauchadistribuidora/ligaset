@@ -6,8 +6,8 @@ import { saveResult } from "@/app/actions/tournaments";
 function teamName(team: any): string {
   if (!team) return "—";
   if (team.name) return team.name;
-  const a = team.player1?.full_name?.split(" ")[0] || "?";
-  const b = team.player2?.full_name?.split(" ")[0] || "?";
+  const a = team.player1?.name?.split(" ")[0] || "?";
+  const b = team.player2?.name?.split(" ")[0] || "?";
   return `${a} & ${b}`;
 }
 

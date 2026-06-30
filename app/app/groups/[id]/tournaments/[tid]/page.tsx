@@ -27,17 +27,17 @@ export default async function TournamentDetail({
     await Promise.all([
       supabase
         .from("group_members")
-        .select("profile:profiles(id, full_name, avatar_url)")
+        .select("id, name, profile:profiles(id, full_name, avatar_url)")
         .eq("group_id", id)
         .eq("status", "active"),
       supabase
         .from("tournament_players")
-        .select("user_id")
+        .select("member_id")
         .eq("tournament_id", tid),
       supabase
         .from("teams")
         .select(
-          "id, name, seed, player1:profiles!teams_player1_id_fkey(id, full_name), player2:profiles!teams_player2_id_fkey(id, full_name)"
+          "id, name, seed, player1:group_members!teams_player1_member_fkey(id, name), player2:group_members!teams_player2_member_fkey(id, name)"
         )
         .eq("tournament_id", tid)
         .order("seed"),
@@ -48,7 +48,7 @@ export default async function TournamentDetail({
         .order("play_order"),
     ]);
 
-  const selectedIds = (participants ?? []).map((p) => p.user_id);
+  const selectedIds = (participants ?? []).map((p) => p.member_id);
   const teamsById: Record<string, any> = {};
   for (const t of teams ?? []) teamsById[t.id] = t;
 
@@ -58,7 +58,6 @@ export default async function TournamentDetail({
   }));
   const hasMatches = normMatches.length > 0;
 
-  // classificação do torneio
   const standings = computeStandings(normMatches, teamsById);
 
   return (
@@ -168,8 +167,8 @@ function computeStandings(matches: any[], teamsById: Record<string, any>) {
   const nameOf = (t: any) => {
     if (!t) return "—";
     if (t.name) return t.name;
-    const a = t.player1?.full_name?.split(" ")[0] || "?";
-    const b = t.player2?.full_name?.split(" ")[0] || "?";
+    const a = t.player1?.name?.split(" ")[0] || "?";
+    const b = t.player2?.name?.split(" ")[0] || "?";
     return `${a} & ${b}`;
   };
 

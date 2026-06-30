@@ -9,7 +9,7 @@ export default async function GroupOverview({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const { supabase, group, isAdmin } = await getGroupContext(id);
+  const { supabase, isAdmin } = await getGroupContext(id);
 
   const [{ count: memberCount }, { count: tournamentCount }, { data: ranking }] =
     await Promise.all([
@@ -31,7 +31,6 @@ export default async function GroupOverview({
         .limit(5),
     ]);
 
-  // financeiro (apenas admin)
   let paid = 0,
     overdue = 0,
     received = 0;
@@ -75,7 +74,7 @@ export default async function GroupOverview({
         {ranking && ranking.length ? (
           <div className="card divide-y divide-slate-100 !p-0">
             {ranking.map((r: any, i: number) => (
-              <div key={r.user_id} className="flex items-center gap-3 px-4 py-3">
+              <div key={r.member_id} className="flex items-center gap-3 px-4 py-3">
                 <span
                   className={`grid h-7 w-7 place-items-center rounded-full text-xs font-black ${
                     i === 0

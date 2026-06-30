@@ -45,21 +45,21 @@ export async function createTournament(groupId: string, formData: FormData) {
 export async function togglePlayer(
   groupId: string,
   tournamentId: string,
-  userId: string,
+  memberId: string,
   add: boolean
 ) {
   const supabase = await createClient();
   if (add) {
     await supabase
       .from("tournament_players")
-      .insert({ tournament_id: tournamentId, user_id: userId })
+      .insert({ tournament_id: tournamentId, member_id: memberId })
       .select();
   } else {
     await supabase
       .from("tournament_players")
       .delete()
       .eq("tournament_id", tournamentId)
-      .eq("user_id", userId);
+      .eq("member_id", memberId);
   }
   revalidatePath(`/app/groups/${groupId}/tournaments/${tournamentId}`);
 }
@@ -67,16 +67,15 @@ export async function togglePlayer(
 export async function drawTournament(groupId: string, tournamentId: string) {
   const supabase = await createClient();
 
-  // limpa sorteio anterior
   await supabase.from("matches").delete().eq("tournament_id", tournamentId);
   await supabase.from("teams").delete().eq("tournament_id", tournamentId);
 
   const { data: players } = await supabase
     .from("tournament_players")
-    .select("user_id")
+    .select("member_id")
     .eq("tournament_id", tournamentId);
 
-  const ids = shuffle((players ?? []).map((p) => p.user_id));
+  const ids = shuffle((players ?? []).map((p) => p.member_id));
   if (ids.length < 4) {
     return { error: "Mínimo de 4 jogadores (2 duplas) para sortear." };
   }
@@ -88,7 +87,6 @@ export async function drawTournament(groupId: string, tournamentId: string) {
     .single();
   const courts = tournament?.courts || 1;
 
-  // cria duplas
   const pairs = makePairs(ids).filter((p) => p[1] !== null);
   const teamRows = pairs.map((p, i) => ({
     tournament_id: tournamentId,
@@ -107,7 +105,6 @@ export async function drawTournament(groupId: string, tournamentId: string) {
     (a, b) => (a.seed ?? 0) - (b.seed ?? 0)
   );
 
-  // gera jogos (round-robin)
   const schedule = roundRobin(ordered.length);
   const matchRows = schedule.map((m) => ({
     tournament_id: tournamentId,
@@ -156,10 +153,7 @@ export async function saveResult(
   revalidatePath(`/app/groups/${groupId}/tournaments/${tournamentId}`);
 }
 
-export async function finishTournament(
-  groupId: string,
-  tournamentId: string
-) {
+export async function finishTournament(groupId: string, tournamentId: string) {
   const supabase = await createClient();
   await supabase
     .from("tournaments")
