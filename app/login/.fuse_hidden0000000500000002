@@ -95,7 +95,9 @@ export default function LoginPage() {
     <main className="min-h-dvh bg-court-gradient">
       <div className="mx-auto flex min-h-dvh max-w-md flex-col justify-center px-6 py-12">
         <div className="mb-8 text-center text-white">
-          <Logo tone="light" className="text-4xl" tagline />
+          <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-court-500 text-xl font-black">
+            LS
+          </div>
           <h1 className="mt-4 text-2xl font-extrabold">Bem-vindo ao Ligaset</h1>
           <p className="mt-1 text-sm text-white/60">
             Entre para gerenciar seus grupos e torneios
@@ -198,10 +200,6 @@ export default function LoginPage() {
         <p className="mt-6 text-center text-xs text-white/50">
           Ao continuar você concorda em usar o Ligaset para gestão do seu grupo.
         </p>
-
-        <div className="mt-2">
-          <Credit tone="light" />
-        </div>
       </div>
     </main>
   );

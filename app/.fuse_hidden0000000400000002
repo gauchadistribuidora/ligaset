@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
-import { Logo, Credit } from "@/components/Logo";
 
 const FEATURES = [
   { icon: "👥", title: "Grupos & comunidade", desc: "Crie grupos, convide jogadores e defina permissões." },
@@ -21,7 +20,8 @@ export default async function Landing() {
     <main className="min-h-dvh bg-court-gradient text-white">
       <div className="mx-auto flex min-h-dvh max-w-md flex-col px-6 pb-10 pt-14">
         <div className="flex items-center gap-2">
-          <Logo tone="light" className="text-2xl" />
+          <span className="grid h-10 w-10 place-items-center rounded-xl bg-court-500 text-lg font-black">LS</span>
+          <span className="text-xl font-extrabold tracking-tight">Ligaset</span>
         </div>
 
         <div className="mt-16 flex-1">
@@ -52,7 +52,6 @@ export default async function Landing() {
           <p className="text-center text-xs text-white/50">
             Beach tennis • Ranking • Comunidade
           </p>
-          <Credit tone="light" />
         </div>
       </div>
     </main>

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { Avatar, Stat } from "@/components/ui";
 import { displayName, shortDate } from "@/lib/format";
+import { Credit } from "@/components/Logo";
 
 export default async function Home() {
   const supabase = await createClient();
@@ -137,6 +138,7 @@ export default async function Home() {
           </Link>
         </div>
       </section>
+      <div className="pt-3 pb-2"><Credit /></div>
     </div>
   );
 }

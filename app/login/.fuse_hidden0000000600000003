@@ -198,10 +198,6 @@ export default function LoginPage() {
         <p className="mt-6 text-center text-xs text-white/50">
           Ao continuar você concorda em usar o Ligaset para gestão do seu grupo.
         </p>
-
-        <div className="mt-2">
-          <Credit tone="light" />
-        </div>
       </div>
     </main>
   );
