@@ -7,8 +7,17 @@ import MatchDeleteButton from "@/components/MatchDeleteButton";
 import FinishButton from "@/components/FinishButton";
 import ManualBuilder from "@/components/ManualBuilder";
 import DeleteTournamentButton from "@/components/DeleteTournamentButton";
+import Bracket from "@/components/Bracket";
+import GenerateKnockoutButton from "@/components/GenerateKnockoutButton";
 import { shortDate } from "@/lib/format";
 import { notFound } from "next/navigation";
+
+const FORMAT_LABEL: Record<string, string> = {
+  round_robin: "Todos contra todos",
+  knockout: "Eliminatória direta",
+  groups_ko: "Grupos + mata-mata",
+  manual: "Manual",
+};
 
 export default async function TournamentDetail({
   params,
@@ -61,15 +70,37 @@ export default async function TournamentDetail({
   }));
   const hasMatches = normMatches.length > 0;
 
-  const standings = computeStandings(normMatches, teamsById);
-  const isManual = tournament.format === "manual";
+  const format = tournament.format || "round_robin";
+  const isManual = format === "manual";
+  const isKnockout = format === "knockout";
+  const isGroupsKo = format === "groups_ko";
   const canEdit = isAdmin && tournament.status !== "finished";
+  const maxGames = tournament.game_format + (tournament.tie_break ? 1 : 0);
+  const sets = tournament.sets ?? 1;
+
+  const groupMatches = normMatches.filter((m: any) => m.phase !== "ko");
+  const koMatches = normMatches.filter((m: any) => m.phase === "ko");
+
+  // standings por grupo (grupos + mata-mata)
+  const groupLabels = Array.from(
+    new Set(groupMatches.map((m: any) => m.group_label || "A"))
+  ).sort();
+  const standingsByGroup = groupLabels.map((l) => ({
+    label: l,
+    standings: computeStandings(
+      groupMatches.filter((m: any) => (m.group_label || "A") === l),
+      teamsById
+    ),
+  }));
+  const groupStageDone =
+    groupMatches.length > 0 &&
+    groupMatches.every((m: any) => m.status === "finished" && m.result);
 
   return (
     <div className="space-y-6">
       <PageHeader
         title={tournament.name}
-        subtitle={`${isManual ? "Manual" : "Todos contra todos"} • ${shortDate(
+        subtitle={`${FORMAT_LABEL[format] || "Torneio"} • ${shortDate(
           tournament.date
         )}${tournament.location ? " • " + tournament.location : ""} • Set até ${
           tournament.game_format
@@ -112,68 +143,106 @@ export default async function TournamentDetail({
 
       {hasMatches ? (
         <>
-          {standings.length > 0 && (
-            <section>
-              <h3 className="mb-2 font-bold text-slate-800">📋 Classificação</h3>
-              <div className="card !p-0">
-                <table className="w-full text-sm">
-                  <thead className="text-xs text-slate-400">
-                    <tr className="border-b border-slate-100">
-                      <th className="py-2 pl-4 text-left font-medium">Dupla</th>
-                      <th className="px-1 font-medium">V</th>
-                      <th className="px-1 font-medium">D</th>
-                      <th className="px-1 font-medium">SG</th>
-                      <th className="py-2 pr-4 font-medium">Pts</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {standings.map((s, i) => (
-                      <tr key={s.teamId} className="border-b border-slate-50 last:border-0">
-                        <td className="py-2 pl-4 text-left">
-                          <span className="mr-2 text-xs text-slate-400">{i + 1}</span>
-                          {s.name}
-                        </td>
-                        <td className="px-1 text-center">{s.wins}</td>
-                        <td className="px-1 text-center">{s.losses}</td>
-                        <td className="px-1 text-center">{s.diff > 0 ? `+${s.diff}` : s.diff}</td>
-                        <td className="py-2 pr-4 text-center font-bold text-court-600">{s.points}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </section>
+          {/* Eliminatória direta */}
+          {isKnockout && (
+            <Bracket
+              matches={koMatches}
+              teamsById={teamsById}
+              groupId={id}
+              tournamentId={tid}
+              canEdit={canEdit}
+              maxGames={maxGames}
+              sets={sets}
+            />
           )}
 
-          <section>
-            <h3 className="mb-2 font-bold text-slate-800">🎾 Jogos</h3>
-            <div className="space-y-3">
-              {normMatches.map((m) => (
-                <div key={m.id} className="space-y-1">
-                  <MatchCard
-                    groupId={id}
-                    tournamentId={tid}
-                    match={m}
-                    teamsById={teamsById}
-                    canEdit={canEdit}
-                    maxGames={tournament.game_format + (tournament.tie_break ? 1 : 0)}
-                    sets={tournament.sets ?? 1}
-                  />
-                  {canEdit && isManual && (
-                    <MatchDeleteButton
+          {/* Grupos + mata-mata: fase de grupos */}
+          {isGroupsKo && (
+            <>
+              {standingsByGroup.map(({ label, standings }) => (
+                <StandingsCard key={label} title={`Grupo ${label}`} standings={standings} />
+              ))}
+
+              <section>
+                <h3 className="mb-2 font-bold text-slate-800">🎾 Jogos dos grupos</h3>
+                <div className="space-y-3">
+                  {groupMatches.map((m: any) => (
+                    <MatchCard
+                      key={m.id}
                       groupId={id}
                       tournamentId={tid}
-                      matchId={m.id}
+                      match={m}
+                      teamsById={teamsById}
+                      canEdit={canEdit}
+                      maxGames={maxGames}
+                      sets={sets}
                     />
-                  )}
+                  ))}
                 </div>
-              ))}
-            </div>
-          </section>
+              </section>
 
-          {canEdit && (
-            <FinishButton groupId={id} tournamentId={tid} />
+              {canEdit && (
+                <GenerateKnockoutButton
+                  groupId={id}
+                  tournamentId={tid}
+                  hasKnockout={koMatches.length > 0}
+                  groupStageDone={groupStageDone}
+                />
+              )}
+
+              {koMatches.length > 0 && (
+                <Bracket
+                  matches={koMatches}
+                  teamsById={teamsById}
+                  groupId={id}
+                  tournamentId={tid}
+                  canEdit={canEdit}
+                  maxGames={maxGames}
+                  sets={sets}
+                />
+              )}
+            </>
           )}
+
+          {/* Todos contra todos / manual */}
+          {!isKnockout && !isGroupsKo && (
+            <>
+              {(() => {
+                const standings = computeStandings(groupMatches, teamsById);
+                return standings.length > 0 ? (
+                  <StandingsCard title="Classificação" standings={standings} />
+                ) : null;
+              })()}
+
+              <section>
+                <h3 className="mb-2 font-bold text-slate-800">🎾 Jogos</h3>
+                <div className="space-y-3">
+                  {groupMatches.map((m: any) => (
+                    <div key={m.id} className="space-y-1">
+                      <MatchCard
+                        groupId={id}
+                        tournamentId={tid}
+                        match={m}
+                        teamsById={teamsById}
+                        canEdit={canEdit}
+                        maxGames={maxGames}
+                        sets={sets}
+                      />
+                      {canEdit && isManual && (
+                        <MatchDeleteButton
+                          groupId={id}
+                          tournamentId={tid}
+                          matchId={m.id}
+                        />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </section>
+            </>
+          )}
+
+          {canEdit && <FinishButton groupId={id} tournamentId={tid} />}
         </>
       ) : (
         !isAdmin && (
@@ -185,6 +254,48 @@ export default async function TournamentDetail({
         )
       )}
     </div>
+  );
+}
+
+function StandingsCard({
+  title,
+  standings,
+}: {
+  title: string;
+  standings: ReturnType<typeof computeStandings>;
+}) {
+  if (standings.length === 0) return null;
+  return (
+    <section>
+      <h3 className="mb-2 font-bold text-slate-800">📋 {title}</h3>
+      <div className="card !p-0">
+        <table className="w-full text-sm">
+          <thead className="text-xs text-slate-400">
+            <tr className="border-b border-slate-100">
+              <th className="py-2 pl-4 text-left font-medium">Dupla</th>
+              <th className="px-1 font-medium">V</th>
+              <th className="px-1 font-medium">D</th>
+              <th className="px-1 font-medium">SG</th>
+              <th className="py-2 pr-4 font-medium">Pts</th>
+            </tr>
+          </thead>
+          <tbody>
+            {standings.map((s, i) => (
+              <tr key={s.teamId} className="border-b border-slate-50 last:border-0">
+                <td className="py-2 pl-4 text-left">
+                  <span className="mr-2 text-xs text-slate-400">{i + 1}</span>
+                  {s.name}
+                </td>
+                <td className="px-1 text-center">{s.wins}</td>
+                <td className="px-1 text-center">{s.losses}</td>
+                <td className="px-1 text-center">{s.diff > 0 ? `+${s.diff}` : s.diff}</td>
+                <td className="py-2 pr-4 text-center font-bold text-court-600">{s.points}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
   );
 }
 

@@ -28,12 +28,33 @@ export default async function NewTournamentPage({
           <label className="label">Tipo de torneio</label>
           <select name="format" defaultValue="round_robin" className="input">
             <option value="round_robin">Todos contra todos (sorteio automático)</option>
+            <option value="knockout">Eliminatória direta (mata-mata)</option>
+            <option value="groups_ko">Grupos + mata-mata</option>
             <option value="manual">Manual (eu monto as duplas e os jogos)</option>
           </select>
           <p className="mt-1 text-xs text-slate-400">
-            No modo manual você cria as duplas e os jogos na mão. Mais formatos
-            (grupos + mata-mata, eliminatória) chegam em breve.
+            Sorteio automático monta as duplas. No mata-mata o perdedor é
+            eliminado. Em grupos + mata-mata, joga-se em grupos e os melhores
+            avançam. No manual você monta tudo na mão.
           </p>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="label">Grupos (p/ grupos + mata-mata)</label>
+            <select name="groups_count" defaultValue="2" className="input">
+              <option value="2">2 grupos</option>
+              <option value="3">3 grupos</option>
+              <option value="4">4 grupos</option>
+            </select>
+          </div>
+          <div>
+            <label className="label">Classificados por grupo</label>
+            <select name="advance_count" defaultValue="2" className="input">
+              <option value="1">1º de cada grupo</option>
+              <option value="2">Top 2 de cada grupo</option>
+            </select>
+          </div>
         </div>
 
         <div className="grid grid-cols-2 gap-3">

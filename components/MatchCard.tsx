@@ -32,6 +32,7 @@ export default function MatchCard({
   const teamB = teamsById[match.team_b_id];
   const result = match.result;
   const multi = sets > 1;
+  const ready = !!match.team_a_id && !!match.team_b_id;
 
   const initial: number[][] =
     result?.set_scores && Array.isArray(result.set_scores)
@@ -120,7 +121,13 @@ export default function MatchCard({
         <Row name={teamName(teamB)} scores={shownB} winner={winnerB} />
       </div>
 
-      {canEdit && (
+      {canEdit && !ready && (
+        <div className="mt-3 border-t border-slate-100 pt-3 text-center text-xs text-slate-400">
+          Aguardando classificados
+        </div>
+      )}
+
+      {canEdit && ready && (
         <div className="mt-3 border-t border-slate-100 pt-3">
           {editing ? (
             <div className="space-y-2">

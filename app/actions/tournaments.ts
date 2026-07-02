@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { shuffle, makePairs, roundRobin } from "@/lib/draw";
+import { buildSingleElim } from "@/lib/bracket";
 
 export async function createTournament(groupId: string, formData: FormData) {
   const supabase = await createClient();
@@ -16,6 +17,8 @@ export async function createTournament(groupId: string, formData: FormData) {
   const tie_break = formData.get("tie_break") === "on";
   const format = String(formData.get("format") || "round_robin");
   const sets = Number(formData.get("sets") || 1);
+  const groups_count = Number(formData.get("groups_count") || 2);
+  const advance_count = Number(formData.get("advance_count") || 2);
   if (!name) return;
 
   const {
@@ -35,6 +38,8 @@ export async function createTournament(groupId: string, formData: FormData) {
       tie_break,
       format,
       sets,
+      groups_count,
+      advance_count,
       created_by: user?.id,
       status: "draft",
     })
@@ -86,10 +91,11 @@ export async function drawTournament(groupId: string, tournamentId: string) {
 
   const { data: tournament } = await supabase
     .from("tournaments")
-    .select("courts")
+    .select("courts, format, groups_count")
     .eq("id", tournamentId)
     .single();
   const courts = tournament?.courts || 1;
+  const format = tournament?.format || "round_robin";
 
   const pairs = makePairs(ids).filter((p) => p[1] !== null);
   const teamRows = pairs.map((p, i) => ({
@@ -109,19 +115,26 @@ export async function drawTournament(groupId: string, tournamentId: string) {
     (a, b) => (a.seed ?? 0) - (b.seed ?? 0)
   );
 
-  const schedule = roundRobin(ordered.length);
-  const matchRows = schedule.map((m) => ({
-    tournament_id: tournamentId,
-    phase: "group",
-    team_a_id: ordered[m.team_a].id,
-    team_b_id: ordered[m.team_b].id,
-    play_order: m.play_order,
-    court: (m.play_order % courts) + 1,
-    status: "scheduled" as const,
-  }));
-
-  const { error: matchErr } = await supabase.from("matches").insert(matchRows);
-  if (matchErr) return { error: matchErr.message };
+  let res: { ok?: boolean; error?: string };
+  if (format === "knockout") {
+    res = await insertKnockout(
+      supabase,
+      tournamentId,
+      ordered.map((t) => t.id),
+      courts
+    );
+  } else if (format === "groups_ko") {
+    res = await insertGroupStage(
+      supabase,
+      tournamentId,
+      ordered.map((t) => t.id),
+      courts,
+      tournament?.groups_count || 2
+    );
+  } else {
+    res = await insertRoundRobin(supabase, tournamentId, ordered.map((t) => t.id), courts);
+  }
+  if (res.error) return res;
 
   await supabase
     .from("tournaments")
@@ -129,6 +142,106 @@ export async function drawTournament(groupId: string, tournamentId: string) {
     .eq("id", tournamentId);
 
   revalidatePath(`/app/groups/${groupId}/tournaments/${tournamentId}`);
+  return { ok: true };
+}
+
+// ---------- geradores de jogos ----------
+
+async function insertRoundRobin(
+  supabase: any,
+  tournamentId: string,
+  teamIds: string[],
+  courts: number,
+  groupLabel: string | null = null,
+  startOrder = 0
+) {
+  const schedule = roundRobin(teamIds.length);
+  const rows = schedule.map((m) => ({
+    tournament_id: tournamentId,
+    phase: "group",
+    group_label: groupLabel,
+    team_a_id: teamIds[m.team_a],
+    team_b_id: teamIds[m.team_b],
+    play_order: startOrder + m.play_order,
+    court: ((startOrder + m.play_order) % courts) + 1,
+    status: "scheduled" as const,
+  }));
+  if (rows.length) {
+    const { error } = await supabase.from("matches").insert(rows);
+    if (error) return { error: error.message };
+  }
+  return { ok: true, count: rows.length };
+}
+
+async function insertGroupStage(
+  supabase: any,
+  tournamentId: string,
+  teamIds: string[],
+  courts: number,
+  groupsCount: number
+) {
+  const G = Math.max(1, Math.min(groupsCount, Math.floor(teamIds.length / 2)));
+  const buckets: string[][] = Array.from({ length: G }, () => []);
+  teamIds.forEach((id, i) => buckets[i % G].push(id));
+  const labels = "ABCDEFGH";
+  let order = 0;
+  for (let gi = 0; gi < G; gi++) {
+    const res = await insertRoundRobin(
+      supabase,
+      tournamentId,
+      buckets[gi],
+      courts,
+      labels[gi],
+      order
+    );
+    if (res.error) return res;
+    order += res.count ?? 0;
+  }
+  return { ok: true };
+}
+
+async function insertKnockout(
+  supabase: any,
+  tournamentId: string,
+  teamIdsSeeded: string[],
+  courts: number
+) {
+  const games = buildSingleElim(teamIdsSeeded);
+  if (!games.length) return { error: "Duplas insuficientes para o mata-mata." };
+
+  const tempToId: Record<string, string> = {};
+  let order = 0;
+  for (const g of games) {
+    const { data, error } = await supabase
+      .from("matches")
+      .insert({
+        tournament_id: tournamentId,
+        phase: "ko",
+        round: g.round,
+        slot: g.slot,
+        team_a_id: g.aTeam,
+        team_b_id: g.bTeam,
+        play_order: order,
+        court: (order % courts) + 1,
+        status: "scheduled",
+      })
+      .select("id")
+      .single();
+    if (error) return { error: error.message };
+    tempToId[g.temp] = data.id;
+    order++;
+  }
+  for (const g of games) {
+    if (g.nextTemp) {
+      await supabase
+        .from("matches")
+        .update({
+          next_match_id: tempToId[g.nextTemp],
+          next_slot: g.nextSlot,
+        })
+        .eq("id", tempToId[g.temp]);
+    }
+  }
   return { ok: true };
 }
 
@@ -273,4 +386,93 @@ export async function reopenTournament(groupId: string, tournamentId: string) {
     .update({ status: "ongoing" })
     .eq("id", tournamentId);
   revalidatePath(`/app/groups/${groupId}/tournaments/${tournamentId}`);
+}
+
+// ---------- Grupos + mata-mata: gerar a fase final a partir dos grupos ----------
+
+export async function generateGroupsKnockout(
+  groupId: string,
+  tournamentId: string
+) {
+  const supabase = await createClient();
+
+  const { data: tournament } = await supabase
+    .from("tournaments")
+    .select("courts, advance_count")
+    .eq("id", tournamentId)
+    .single();
+  const courts = tournament?.courts || 1;
+  const advance = Math.max(1, tournament?.advance_count || 2);
+
+  const { data: matches } = await supabase
+    .from("matches")
+    .select("team_a_id, team_b_id, group_label, status, result:match_results(games_a, games_b, winner_team_id)")
+    .eq("tournament_id", tournamentId)
+    .eq("phase", "group");
+
+  const norm = (matches ?? []).map((m: any) => ({
+    ...m,
+    result: Array.isArray(m.result) ? m.result[0] ?? null : m.result,
+  }));
+
+  if (norm.some((m: any) => m.status !== "finished" || !m.result)) {
+    return { error: "Conclua todos os jogos da fase de grupos antes de gerar o mata-mata." };
+  }
+
+  // standings por grupo
+  type S = { teamId: string; wins: number; gf: number; ga: number };
+  const groups: Record<string, Record<string, S>> = {};
+  const touch = (g: string, id: string) => {
+    groups[g] ??= {};
+    groups[g][id] ??= { teamId: id, wins: 0, gf: 0, ga: 0 };
+    return groups[g][id];
+  };
+  for (const m of norm) {
+    const g = m.group_label || "A";
+    if (!m.team_a_id || !m.team_b_id || !m.result) continue;
+    const A = touch(g, m.team_a_id);
+    const B = touch(g, m.team_b_id);
+    A.gf += m.result.games_a;
+    A.ga += m.result.games_b;
+    B.gf += m.result.games_b;
+    B.ga += m.result.games_a;
+    if (m.result.winner_team_id === m.team_a_id) A.wins++;
+    else if (m.result.winner_team_id === m.team_b_id) B.wins++;
+  }
+
+  const rankOf = (g: string): string[] =>
+    Object.values(groups[g])
+      .sort((a, b) => b.wins - a.wins || b.gf - b.ga - (a.gf - a.ga) || b.gf - a.gf)
+      .map((s) => s.teamId);
+
+  const labels = Object.keys(groups).sort();
+  if (labels.length === 0) return { error: "Nenhum grupo encontrado." };
+
+  // cruzamento: 1º de cada grupo, depois 2º (em ordem invertida) etc.
+  const ranks: string[][] = labels.map(rankOf);
+  const seeded: string[] = [];
+  for (let r = 0; r < advance; r++) {
+    const labelOrder = r % 2 === 0 ? labels.map((_, i) => i) : labels.map((_, i) => i).reverse();
+    for (const li of labelOrder) {
+      const id = ranks[li][r];
+      if (id) seeded.push(id);
+    }
+  }
+
+  if (seeded.length < 2) {
+    return { error: "Classificados insuficientes para o mata-mata." };
+  }
+
+  // limpa um mata-mata anterior, se houver
+  await supabase
+    .from("matches")
+    .delete()
+    .eq("tournament_id", tournamentId)
+    .eq("phase", "ko");
+
+  const res = await insertKnockout(supabase, tournamentId, seeded, courts);
+  if (res.error) return res;
+
+  revalidatePath(`/app/groups/${groupId}/tournaments/${tournamentId}`);
+  return { ok: true };
 }
