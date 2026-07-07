@@ -53,7 +53,7 @@ export default async function GroupLayout({
         </div>
       </div>
 
-      <GroupTabs groupId={id} />
+      <GroupTabs groupId={id} isAdmin={isAdmin} />
       {children}
     </div>
   );

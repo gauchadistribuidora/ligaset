@@ -3,7 +3,13 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-export default function GroupTabs({ groupId }: { groupId: string }) {
+export default function GroupTabs({
+  groupId,
+  isAdmin = false,
+}: {
+  groupId: string;
+  isAdmin?: boolean;
+}) {
   const pathname = usePathname() || "";
   const base = `/app/groups/${groupId}`;
   const tabs = [
@@ -12,6 +18,7 @@ export default function GroupTabs({ groupId }: { groupId: string }) {
     { href: `${base}/ranking`, label: "Ranking" },
     { href: `${base}/members`, label: "Membros" },
     { href: `${base}/payments`, label: "Mensalidades" },
+    ...(isAdmin ? [{ href: `${base}/relatorios`, label: "Relatórios" }] : []),
   ];
 
   return (
