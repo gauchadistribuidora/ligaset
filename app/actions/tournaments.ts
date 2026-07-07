@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { shuffle, makePairs, roundRobin } from "@/lib/draw";
 import { buildSingleElim } from "@/lib/bracket";
+import { reiRotationRounds } from "@/lib/rei";
 
 export async function createTournament(groupId: string, formData: FormData) {
   const supabase = await createClient();
@@ -96,6 +97,18 @@ export async function drawTournament(groupId: string, tournamentId: string) {
     .single();
   const courts = tournament?.courts || 1;
   const format = tournament?.format || "round_robin";
+
+  // Rei da Praia: individual, sem duplas fixas — gera o rodízio direto
+  if (format === "rei_praia") {
+    const res = await insertRei(supabase, tournamentId, ids, courts);
+    if (res.error) return res;
+    await supabase
+      .from("tournaments")
+      .update({ status: "ongoing" })
+      .eq("id", tournamentId);
+    revalidatePath(`/app/groups/${groupId}/tournaments/${tournamentId}`);
+    return { ok: true };
+  }
 
   const pairs = makePairs(ids).filter((p) => p[1] !== null);
   const teamRows = pairs.map((p, i) => ({
@@ -200,6 +213,58 @@ async function insertGroupStage(
   return { ok: true };
 }
 
+async function insertRei(
+  supabase: any,
+  tournamentId: string,
+  memberIds: string[],
+  courts: number
+) {
+  const rounds = reiRotationRounds(memberIds);
+  if (!rounds.length)
+    return { error: "Mínimo de 4 atletas para o Rei da Praia." };
+
+  let order = 0;
+  for (const m of rounds) {
+    const { data: tA, error: eA } = await supabase
+      .from("teams")
+      .insert({
+        tournament_id: tournamentId,
+        player1_id: m.teamA[0],
+        player2_id: m.teamA[1],
+        seed: order * 2 + 1,
+      })
+      .select("id")
+      .single();
+    if (eA) return { error: eA.message };
+
+    const { data: tB, error: eB } = await supabase
+      .from("teams")
+      .insert({
+        tournament_id: tournamentId,
+        player1_id: m.teamB[0],
+        player2_id: m.teamB[1],
+        seed: order * 2 + 2,
+      })
+      .select("id")
+      .single();
+    if (eB) return { error: eB.message };
+
+    const { error: eM } = await supabase.from("matches").insert({
+      tournament_id: tournamentId,
+      phase: "rei",
+      round: m.round,
+      team_a_id: tA.id,
+      team_b_id: tB.id,
+      play_order: order,
+      court: (order % courts) + 1,
+      status: "scheduled",
+    });
+    if (eM) return { error: eM.message };
+    order++;
+  }
+  return { ok: true };
+}
+
 async function insertKnockout(
   supabase: any,
   tournamentId: string,
@@ -281,6 +346,33 @@ export async function finishTournament(groupId: string, tournamentId: string) {
     .update({ status: "finished" })
     .eq("id", tournamentId);
   revalidatePath(`/app/groups/${groupId}/tournaments/${tournamentId}`);
+}
+
+export async function updateMatchTeams(
+  groupId: string,
+  tournamentId: string,
+  teamAId: string,
+  teamBId: string,
+  teamA: [string, string],
+  teamB: [string, string]
+) {
+  const supabase = await createClient();
+  const all = [...teamA, ...teamB];
+  if (all.some((x) => !x) || new Set(all).size !== 4) {
+    return { error: "Escolha 4 atletas diferentes." };
+  }
+  const { error: e1 } = await supabase
+    .from("teams")
+    .update({ player1_id: teamA[0], player2_id: teamA[1] })
+    .eq("id", teamAId);
+  if (e1) return { error: e1.message };
+  const { error: e2 } = await supabase
+    .from("teams")
+    .update({ player1_id: teamB[0], player2_id: teamB[1] })
+    .eq("id", teamBId);
+  if (e2) return { error: e2.message };
+  revalidatePath(`/app/groups/${groupId}/tournaments/${tournamentId}`);
+  return { ok: true };
 }
 
 // ---------- Modo manual: admin cria duplas e jogos na mão ----------
