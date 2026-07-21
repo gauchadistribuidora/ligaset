@@ -4,6 +4,8 @@ import { brl, monthLabel } from "@/lib/format";
 import GenerateChargesForm from "@/components/GenerateChargesForm";
 import AddPaymentForm from "@/components/AddPaymentForm";
 import PaymentRow from "@/components/PaymentRow";
+import ExpenseForm from "@/components/ExpenseForm";
+import ExpenseRow from "@/components/ExpenseRow";
 
 export default async function PaymentsPage({
   params,
@@ -22,6 +24,13 @@ export default async function PaymentsPage({
     .order("reference_month", { ascending: false });
   const rows = payments ?? [];
 
+  const { data: expenses } = await supabase
+    .from("expenses")
+    .select("*")
+    .eq("group_id", id)
+    .order("expense_date", { ascending: false });
+  const expenseRows = expenses ?? [];
+
   // jogadores do grupo (para a cobrança avulsa)
   const { data: members } = isAdmin
     ? await supabase
@@ -37,6 +46,8 @@ export default async function PaymentsPage({
     .reduce((s, p) => s + Number(p.amount), 0);
   const pending = rows.filter((p) => p.status === "pending").length;
   const overdue = rows.filter((p) => p.status === "overdue").length;
+  const totalExpenses = expenseRows.reduce((s, e) => s + Number(e.amount), 0);
+  const saldo = received - totalExpenses;
 
   const byMonth: Record<string, any[]> = {};
   for (const p of rows) {
@@ -49,22 +60,51 @@ export default async function PaymentsPage({
       {isAdmin && (
         <>
           <div className="grid grid-cols-3 gap-3">
-            <Stat label="Recebido" value={brl(received)} />
-            <Stat label="Pendentes" value={pending} />
-            <Stat label="Vencidas" value={overdue} />
+            <Stat label="Arrecadado" value={brl(received)} />
+            <Stat label="Despesas" value={brl(totalExpenses)} />
+            <Stat
+              label="Saldo"
+              value={
+                <span className={saldo < 0 ? "text-rose-500" : "text-court-600"}>
+                  {brl(saldo)}
+                </span>
+              }
+            />
           </div>
-          {settings && (
-            <p className="px-1 text-xs text-slate-400">
-              Mensalidade do grupo: {brl(Number(settings.monthly_fee))} • vence
-              dia {settings.due_day}.{" "}
-              {Number(settings.monthly_fee) === 0 &&
-                "Defina o valor nas configurações ⚙️."}
-            </p>
-          )}
+          <p className="px-1 text-xs text-slate-400">
+            {pending} pendente(s) • {overdue} vencida(s).
+            {settings && Number(settings.monthly_fee) > 0
+              ? ` Mensalidade: ${brl(Number(settings.monthly_fee))} • vence dia ${settings.due_day}.`
+              : " Defina o valor da mensalidade nas configurações ⚙️."}
+          </p>
+
           <div className="space-y-2">
             <GenerateChargesForm groupId={id} />
             <AddPaymentForm groupId={id} members={members ?? []} />
           </div>
+
+          <section>
+            <h3 className="mb-2 font-bold text-slate-800">💸 Despesas</h3>
+            <ExpenseForm groupId={id} />
+            {expenseRows.length > 0 && (
+              <div className="card mt-2 divide-y divide-slate-100 !p-0">
+                {expenseRows.map((e) => (
+                  <ExpenseRow
+                    key={e.id}
+                    groupId={id}
+                    expense={e}
+                    canManage={isAdmin}
+                  />
+                ))}
+              </div>
+            )}
+          </section>
+
+          {months.length > 0 && (
+            <h3 className="!mt-6 px-1 font-bold text-slate-800">
+              🧾 Mensalidades
+            </h3>
+          )}
         </>
       )}
 

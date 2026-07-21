@@ -17,12 +17,12 @@ export default function GroupTabs({
     { href: `${base}/tournaments`, label: "Torneios" },
     { href: `${base}/ranking`, label: "Ranking" },
     { href: `${base}/members`, label: "Membros" },
-    { href: `${base}/payments`, label: "Mensalidades" },
+    { href: `${base}/payments`, label: "Financeiro" },
     ...(isAdmin ? [{ href: `${base}/relatorios`, label: "Relatórios" }] : []),
   ];
 
   return (
-    <div className="-mx-4 mb-5 flex gap-1 overflow-x-auto px-4 pb-1 no-scrollbar">
+    <div className="mb-5 flex flex-wrap gap-2">
       {tabs.map((t) => {
         const active = t.exact
           ? pathname === t.href

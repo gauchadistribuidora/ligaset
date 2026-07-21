@@ -34,25 +34,6 @@ export default function LoginPage() {
     }
   }
 
-  async function signUp() {
-    setError(null);
-    setInfo(null);
-    if (password.length < 6) {
-      setError("A senha precisa ter ao menos 6 caracteres.");
-      return;
-    }
-    setLoading("criar");
-    const { data, error } = await supabase.auth.signUp({ email, password });
-    setLoading(null);
-    if (error) {
-      setError(error.message);
-    } else if (data.session) {
-      window.location.href = "/app/definir-senha?novo=1";
-    } else {
-      setInfo("Conta criada! Verifique seu e-mail para confirmar e depois entre.");
-    }
-  }
-
   async function forgot() {
     setError(null);
     setInfo(null);
@@ -128,13 +109,9 @@ export default function LoginPage() {
           </form>
 
           <div className="mt-3 flex items-center justify-between text-sm">
-            <button
-              onClick={signUp}
-              disabled={loading !== null}
-              className="font-semibold text-court-600"
-            >
-              {loading === "criar" ? "Criando..." : "Criar conta"}
-            </button>
+            <a href="/criar-conta" className="font-semibold text-court-600">
+              Criar conta
+            </a>
             <button
               onClick={forgot}
               disabled={loading !== null}
