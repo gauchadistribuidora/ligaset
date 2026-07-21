@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 export default function LoginPage() {
@@ -11,6 +11,12 @@ export default function LoginPage() {
   const [loading, setLoading] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+
+  useEffect(() => {
+    const p = new URLSearchParams(window.location.search);
+    if (p.get("desconectado")) setNotice("Você foi desconectado com sucesso.");
+  }, []);
 
   const origin = typeof window !== "undefined" ? window.location.origin : "";
 
@@ -77,6 +83,12 @@ export default function LoginPage() {
               className="h-full w-full object-cover object-center"
             />
           </div>
+
+          {notice && (
+            <div className="mb-4 rounded-xl border border-court-200 bg-court-50 px-4 py-3 text-center text-sm font-medium text-court-700">
+              ✅ {notice}
+            </div>
+          )}
 
           <form onSubmit={signInPassword} className="space-y-3">
             <div>
