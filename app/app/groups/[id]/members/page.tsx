@@ -1,5 +1,6 @@
 import { getGroupContext } from "@/lib/data";
 import AddMemberForm from "@/components/AddMemberForm";
+import InviteBox from "@/components/InviteBox";
 import MemberRow from "@/components/MemberRow";
 
 export default async function MembersPage({
@@ -21,6 +22,7 @@ export default async function MembersPage({
   return (
     <div className="space-y-4">
       {isAdmin && <AddMemberForm groupId={id} />}
+      {isAdmin && <InviteBox groupId={id} />}
 
       <div className="card divide-y divide-slate-100 !p-0">
         {(members ?? []).map((m: any) => (

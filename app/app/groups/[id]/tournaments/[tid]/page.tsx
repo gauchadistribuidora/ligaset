@@ -7,6 +7,7 @@ import MatchDeleteButton from "@/components/MatchDeleteButton";
 import FinishButton from "@/components/FinishButton";
 import ManualBuilder from "@/components/ManualBuilder";
 import DeleteTournamentButton from "@/components/DeleteTournamentButton";
+import ReopenTournamentButton from "@/components/ReopenTournamentButton";
 import Bracket from "@/components/Bracket";
 import GenerateKnockoutButton from "@/components/GenerateKnockoutButton";
 import EditMatchTeams from "@/components/EditMatchTeams";
@@ -115,6 +116,22 @@ export default async function TournamentDetail({
           ) : undefined
         }
       />
+
+      {tournament.status === "finished" && (
+        <div className="card border border-amber-200 bg-amber-50">
+          <p className="text-sm text-amber-800">
+            🏁 Torneio encerrado.{" "}
+            {isAdmin
+              ? "Para corrigir um placar, reabra o torneio abaixo, edite os resultados e encerre de novo."
+              : "Os resultados foram consolidados."}
+          </p>
+          {isAdmin && (
+            <div className="mt-3">
+              <ReopenTournamentButton groupId={id} tournamentId={tid} />
+            </div>
+          )}
+        </div>
+      )}
 
       {canEdit && !isManual && (
         <ParticipantsPicker

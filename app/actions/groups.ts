@@ -199,3 +199,68 @@ export async function removeMember(groupId: string, memberId: string) {
   if (error) throw new Error(error.message);
   revalidatePath(`/app/groups/${groupId}/members`);
 }
+
+export async function inviteEmails(
+  groupId: string,
+  origin: string,
+  formData: FormData
+) {
+  const supabase = await createClient();
+  const raw = String(formData.get("emails") || "");
+  const emails = Array.from(
+    new Set(
+      raw
+        .split(/[\s,;]+/)
+        .map((e) => e.trim().toLowerCase())
+        .filter((e) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e))
+    )
+  );
+  if (emails.length === 0)
+    return { error: "Informe ao menos um e-mail válido." };
+
+  let sent = 0;
+  const failed: string[] = [];
+
+  for (const email of emails) {
+    // cria o jogador no grupo se ainda não existir
+    const { data: existing } = await supabase
+      .from("group_members")
+      .select("id")
+      .eq("group_id", groupId)
+      .ilike("email", email)
+      .maybeSingle();
+
+    if (!existing) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("id")
+        .ilike("email", email)
+        .maybeSingle();
+      await supabase.from("group_members").insert({
+        group_id: groupId,
+        user_id: profile?.id ?? null,
+        name: email.split("@")[0],
+        email,
+        role: "player",
+        status: "active",
+      });
+    }
+
+    const { error } = await supabase.auth.signInWithOtp({
+      email,
+      options: {
+        emailRedirectTo: `${origin}/auth/callback?next=/app/definir-senha`,
+      },
+    });
+    if (error) failed.push(email);
+    else sent++;
+  }
+
+  revalidatePath(`/app/groups/${groupId}/members`);
+  if (sent === 0)
+    return {
+      error:
+        "Não foi possível enviar os convites. Verifique o limite de e-mails ou a configuração de SMTP no Supabase.",
+    };
+  return { ok: true, sent, failed };
+}

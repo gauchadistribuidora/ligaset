@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { shuffle, makePairs, roundRobin } from "@/lib/draw";
 import { buildSingleElim } from "@/lib/bracket";
 import { reiRotationRounds } from "@/lib/rei";
+import { notifyTournamentFinished } from "@/lib/notify";
 
 export async function createTournament(groupId: string, formData: FormData) {
   const supabase = await createClient();
@@ -345,6 +346,7 @@ export async function finishTournament(groupId: string, tournamentId: string) {
     .from("tournaments")
     .update({ status: "finished" })
     .eq("id", tournamentId);
+  await notifyTournamentFinished(supabase, groupId, tournamentId);
   revalidatePath(`/app/groups/${groupId}/tournaments/${tournamentId}`);
 }
 
