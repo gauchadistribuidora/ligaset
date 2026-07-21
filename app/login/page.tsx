@@ -8,21 +8,11 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPass, setShowPass] = useState(false);
-  const [sent, setSent] = useState(false);
   const [loading, setLoading] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
 
   const origin = typeof window !== "undefined" ? window.location.origin : "";
-
-  async function signInWithGoogle() {
-    setError(null);
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: { redirectTo: `${origin}/auth/callback?next=/app` },
-    });
-    if (error) setError(error.message);
-  }
 
   async function signInPassword(e: React.FormEvent) {
     e.preventDefault();
@@ -32,7 +22,7 @@ export default function LoginPage() {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     setLoading(null);
     if (error) {
-      setError("E-mail ou senha incorretos. Crie uma conta ou entre pelo link.");
+      setError("E-mail ou senha incorretos. Crie uma conta ou recupere a senha.");
     } else {
       window.location.href = "/app";
     }
@@ -55,23 +45,6 @@ export default function LoginPage() {
     } else {
       setInfo("Conta criada! Verifique seu e-mail para confirmar e depois entre.");
     }
-  }
-
-  async function magicLink() {
-    setError(null);
-    setInfo(null);
-    if (!email) {
-      setError("Informe seu e-mail.");
-      return;
-    }
-    setLoading("link");
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: { emailRedirectTo: `${origin}/auth/callback?next=/app/definir-senha` },
-    });
-    setLoading(null);
-    if (error) setError(error.message);
-    else setSent(true);
   }
 
   async function forgot() {
@@ -105,96 +78,62 @@ export default function LoginPage() {
             />
           </div>
 
-          {sent ? (
-            <div className="text-center">
-              <div className="text-4xl">📩</div>
-              <h2 className="mt-3 text-lg font-bold">Confira seu e-mail</h2>
-              <p className="mt-1 text-sm text-slate-500">
-                Enviamos um link de acesso para <b>{email}</b>. Clique nele para
-                entrar.
-              </p>
-              <button onClick={() => setSent(false)} className="btn-ghost mt-4 w-full">
-                Voltar
-              </button>
+          <form onSubmit={signInPassword} className="space-y-3">
+            <div>
+              <label className="label">E-mail</label>
+              <input
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="voce@email.com"
+                className="input"
+              />
             </div>
-          ) : (
-            <>
-              <button onClick={signInWithGoogle} className="btn-ghost w-full">
-                <svg width="18" height="18" viewBox="0 0 24 24">
-                  <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.27-4.74 3.27-8.1z"/>
-                  <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84A11 11 0 0 0 12 23z"/>
-                  <path fill="#FBBC05" d="M5.84 14.1a6.6 6.6 0 0 1 0-4.2V7.06H2.18a11 11 0 0 0 0 9.88l3.66-2.84z"/>
-                  <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1A11 11 0 0 0 2.18 7.06l3.66 2.84C6.71 7.3 9.14 5.38 12 5.38z"/>
-                </svg>
-                Continuar com Google
-              </button>
-
-              <div className="my-4 flex items-center gap-3 text-xs text-slate-400">
-                <div className="h-px flex-1 bg-slate-200" />
-                ou com e-mail e senha
-                <div className="h-px flex-1 bg-slate-200" />
-              </div>
-
-              <form onSubmit={signInPassword} className="space-y-3">
-                <div>
-                  <label className="label">E-mail</label>
-                  <input
-                    type="email"
-                    required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="voce@email.com"
-                    className="input"
-                  />
-                </div>
-                <div>
-                  <label className="label">Senha</label>
-                  <div className="relative">
-                    <input
-                      type={showPass ? "text" : "password"}
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      placeholder="sua senha"
-                      className="input pr-12"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPass((v) => !v)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400"
-                    >
-                      {showPass ? "ocultar" : "ver"}
-                    </button>
-                  </div>
-                </div>
-
-                <button type="submit" disabled={loading !== null} className="btn-primary w-full">
-                  {loading === "entrar" ? "Entrando..." : "Entrar"}
-                </button>
-              </form>
-
-              <div className="mt-3 flex items-center justify-between text-sm">
-                <button onClick={signUp} disabled={loading !== null} className="font-semibold text-court-600">
-                  {loading === "criar" ? "Criando..." : "Criar conta"}
-                </button>
-                <button onClick={forgot} disabled={loading !== null} className="text-slate-500">
-                  Esqueci a senha
+            <div>
+              <label className="label">Senha</label>
+              <div className="relative">
+                <input
+                  type={showPass ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="sua senha"
+                  className="input pr-12"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPass((v) => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400"
+                >
+                  {showPass ? "ocultar" : "ver"}
                 </button>
               </div>
+            </div>
 
-              <div className="my-4 flex items-center gap-3 text-xs text-slate-400">
-                <div className="h-px flex-1 bg-slate-200" />
-                ou
-                <div className="h-px flex-1 bg-slate-200" />
-              </div>
+            <button type="submit" disabled={loading !== null} className="btn-primary w-full">
+              {loading === "entrar" ? "Entrando..." : "Entrar"}
+            </button>
+          </form>
 
-              <button onClick={magicLink} disabled={loading !== null} className="btn-ghost w-full">
-                {loading === "link" ? "Enviando..." : "✉️ Entrar por link no e-mail (sem senha)"}
-              </button>
+          <div className="mt-3 flex items-center justify-between text-sm">
+            <button
+              onClick={signUp}
+              disabled={loading !== null}
+              className="font-semibold text-court-600"
+            >
+              {loading === "criar" ? "Criando..." : "Criar conta"}
+            </button>
+            <button
+              onClick={forgot}
+              disabled={loading !== null}
+              className="text-slate-500"
+            >
+              Esqueci a senha
+            </button>
+          </div>
 
-              {error && <p className="mt-3 text-center text-sm text-rose-500">{error}</p>}
-              {info && <p className="mt-3 text-center text-sm text-court-600">{info}</p>}
-            </>
-          )}
+          {error && <p className="mt-3 text-center text-sm text-rose-500">{error}</p>}
+          {info && <p className="mt-3 text-center text-sm text-court-600">{info}</p>}
         </div>
       </div>
     </main>
