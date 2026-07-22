@@ -75,14 +75,11 @@ export default function CriarContaPage() {
     <main className="min-h-dvh bg-court-gradient">
       <div className="mx-auto flex min-h-dvh max-w-md flex-col justify-center px-6 py-12">
         <div className="card">
-          <div
-            className="mx-auto mb-4 w-full overflow-hidden rounded-xl"
-            style={{ aspectRatio: "5 / 2" }}
-          >
+          <div className="mx-auto mb-4 h-36 w-36">
             <img
               src="/logo.png"
               alt="LigaSet"
-              className="h-full w-full object-cover object-center"
+              className="h-full w-full object-contain"
             />
           </div>
 
