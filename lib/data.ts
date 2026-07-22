@@ -7,28 +7,24 @@ export async function getGroupContext(groupId: string) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const { data: group } = await supabase
-    .from("groups")
-    .select("*")
-    .eq("id", groupId)
-    .single();
+  const [{ data: group }, { data: membership }, { data: settings }] =
+    await Promise.all([
+      supabase.from("groups").select("*").eq("id", groupId).single(),
+      supabase
+        .from("group_members")
+        .select("role, status")
+        .eq("group_id", groupId)
+        .eq("user_id", user!.id)
+        .maybeSingle(),
+      supabase
+        .from("group_settings")
+        .select("*")
+        .eq("group_id", groupId)
+        .maybeSingle(),
+    ]);
 
   if (!group) notFound();
-
-  const { data: membership } = await supabase
-    .from("group_members")
-    .select("role, status")
-    .eq("group_id", groupId)
-    .eq("user_id", user!.id)
-    .maybeSingle();
-
   if (!membership) notFound();
-
-  const { data: settings } = await supabase
-    .from("group_settings")
-    .select("*")
-    .eq("group_id", groupId)
-    .maybeSingle();
 
   const isAdmin = membership.role === "owner" || membership.role === "admin";
 

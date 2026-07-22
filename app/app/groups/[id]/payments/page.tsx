@@ -81,6 +81,12 @@ export default async function PaymentsPage({
           <div className="space-y-2">
             <GenerateChargesForm groupId={id} />
             <AddPaymentForm groupId={id} members={members ?? []} />
+            <a
+              href={`/app/groups/${id}/financeiro/relatorio`}
+              className="btn-ghost block w-full text-center"
+            >
+              📄 Relatório financeiro (PDF / e-mail)
+            </a>
           </div>
 
           <section>
