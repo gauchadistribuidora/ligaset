@@ -8,6 +8,7 @@ type SendArgs = {
   html: string;
   text?: string;
   replyTo?: string;
+  bcc?: string | string[];
 };
 
 export type SendResult =
@@ -37,6 +38,7 @@ export async function sendEmail(args: SendArgs): Promise<SendResult> {
       body: JSON.stringify({
         from,
         to,
+        bcc: args.bcc,
         subject: args.subject,
         html: args.html,
         text: args.text,

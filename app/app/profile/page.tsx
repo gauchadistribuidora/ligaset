@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { PageHeader, Avatar, Stat } from "@/components/ui";
 import { updateProfile } from "@/app/actions/profile";
+import { isPlatformAdminEmail } from "@/lib/admin";
 
 export default async function ProfilePage() {
   const supabase = await createClient();
@@ -36,6 +37,7 @@ export default async function ProfilePage() {
     }
   }
   const pct = games ? Math.round((100 * wins) / games) : 0;
+  const isPlatformAdmin = isPlatformAdminEmail(user?.email);
 
   return (
     <div className="space-y-6">
@@ -80,6 +82,12 @@ export default async function ProfilePage() {
         </div>
         <button className="btn-primary w-full">Salvar</button>
       </form>
+
+      {isPlatformAdmin && (
+        <a href="/app/admin" className="btn-primary w-full">
+          🛠️ Painel de administrador
+        </a>
+      )}
 
       <a href="/app/definir-senha" className="btn-ghost w-full">
         🔑 Criar / alterar senha
