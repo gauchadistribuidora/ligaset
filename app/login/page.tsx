@@ -121,6 +121,11 @@ export default function LoginPage() {
           {error && <p className="mt-3 text-center text-sm text-rose-500">{error}</p>}
           {info && <p className="mt-3 text-center text-sm text-court-600">{info}</p>}
         </div>
+        <p className="mt-6 text-center text-xs text-slate-400">
+          Ao continuar, você concorda com os{" "}
+          <a href="/termos" className="underline">Termos</a> e a{" "}
+          <a href="/privacidade" className="underline">Política de Privacidade</a>.
+        </p>
       </div>
     </main>
   );

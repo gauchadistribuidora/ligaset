@@ -215,6 +215,11 @@ export default function CriarContaPage() {
             Já tem conta? <span className="font-semibold text-court-600">Entrar</span>
           </a>
         </div>
+        <p className="mt-6 text-center text-xs text-slate-400">
+          Ao continuar, você concorda com os{" "}
+          <a href="/termos" className="underline">Termos</a> e a{" "}
+          <a href="/privacidade" className="underline">Política de Privacidade</a>.
+        </p>
       </div>
     </main>
   );

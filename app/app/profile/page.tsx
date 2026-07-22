@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { PageHeader, Avatar, Stat } from "@/components/ui";
 import { updateProfile } from "@/app/actions/profile";
 import { isPlatformAdminEmail } from "@/lib/admin";
+import DeleteAccountButton from "@/components/DeleteAccountButton";
 
 export default async function ProfilePage() {
   const supabase = await createClient();
@@ -96,6 +97,15 @@ export default async function ProfilePage() {
       <form action="/auth/signout" method="post">
         <button className="btn-ghost w-full !text-rose-500">Sair da conta</button>
       </form>
+
+      <div className="flex justify-center gap-4 pt-2 text-xs text-slate-400">
+        <a href="/privacidade" className="underline">Privacidade</a>
+        <a href="/termos" className="underline">Termos</a>
+      </div>
+
+      <div className="border-t border-slate-100 pt-4">
+        <DeleteAccountButton />
+      </div>
     </div>
   );
 }
