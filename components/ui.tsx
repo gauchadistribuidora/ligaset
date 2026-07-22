@@ -87,15 +87,23 @@ export function Stat({
   label,
   value,
   hint,
+  valueClassName,
 }: {
   label: string;
   value: React.ReactNode;
   hint?: string;
+  valueClassName?: string;
 }) {
   return (
     <div className="stat-card">
       <div className="text-xs font-medium text-slate-500">{label}</div>
-      <div className="mt-1 text-2xl font-black text-slate-900">{value}</div>
+      <div
+        className={`mt-1 font-black text-slate-900 ${
+          valueClassName ?? "text-2xl"
+        }`}
+      >
+        {value}
+      </div>
       {hint && <div className="text-xs text-slate-400">{hint}</div>}
     </div>
   );

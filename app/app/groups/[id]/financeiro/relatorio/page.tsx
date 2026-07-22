@@ -29,10 +29,11 @@ export default async function FinanceReportPage({
 
       <div className="print-area space-y-5">
         <div className="grid grid-cols-3 gap-3">
-          <Stat label="Arrecadado" value={brl(s.received)} />
-          <Stat label="Despesas" value={brl(s.totalExpenses)} />
+          <Stat label="Arrecadado" value={brl(s.received)} valueClassName="text-sm leading-tight tabular-nums sm:text-lg" />
+          <Stat label="Despesas" value={brl(s.totalExpenses)} valueClassName="text-sm leading-tight tabular-nums sm:text-lg" />
           <Stat
             label="Saldo"
+            valueClassName="text-sm leading-tight tabular-nums sm:text-lg"
             value={
               <span className={s.saldo < 0 ? "text-rose-500" : "text-court-600"}>
                 {brl(s.saldo)}

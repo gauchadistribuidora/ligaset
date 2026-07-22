@@ -60,10 +60,11 @@ export default async function PaymentsPage({
       {isAdmin && (
         <>
           <div className="grid grid-cols-3 gap-3">
-            <Stat label="Arrecadado" value={brl(received)} />
-            <Stat label="Despesas" value={brl(totalExpenses)} />
+            <Stat label="Arrecadado" value={brl(received)} valueClassName="text-sm leading-tight tabular-nums sm:text-lg" />
+            <Stat label="Despesas" value={brl(totalExpenses)} valueClassName="text-sm leading-tight tabular-nums sm:text-lg" />
             <Stat
               label="Saldo"
+              valueClassName="text-sm leading-tight tabular-nums sm:text-lg"
               value={
                 <span className={saldo < 0 ? "text-rose-500" : "text-court-600"}>
                   {brl(saldo)}
