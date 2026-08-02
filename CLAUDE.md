@@ -23,7 +23,19 @@ Site em produção: **https://ligaset.com.br**
 | `components/` | Componentes de UI (MatchCard, Bracket, formulários, etc.) |
 | `lib/` | Regras de negócio: `draw.ts` (sorteio), `bracket.ts` (chaveamento), `finance.ts` (financeiro), `reports.ts` (relatórios), `email.ts`/`notify.ts` (envios), `data.ts` (consultas), `types.ts` |
 | `lib/supabase/` | Clientes do Supabase: `client.ts` (browser), `server.ts` (server), `middleware.ts` (sessão), `admin.ts` (service role — **nunca usar em código de cliente**) |
-| `supabase/migrations/` | Migrations versionadas, `0001` a `0012` |
+| `app/app/externos/` | **Torneios de fora** — histórico pessoal dos torneios que não são do Ligaset. Regras em `lib/external.ts`, ações em `app/actions/external.ts` |
+| `supabase/migrations/` | Migrations versionadas, `0001` a `0013` |
+
+### Torneios de fora (módulo em teste)
+Cada jogador registra os torneios que disputa fora da plataforma: torneio, data,
+categoria, parceiro e os jogos (fase, dupla adversária, placar por set). O resultado
+final — Campeão, Vice, "parou nas quartas" — é **calculado** a partir dos jogos; nunca
+digitado. O fluxo é fechado pelos botões **Avançou** / **Foi eliminada**.
+
+Enquanto está em teste, o módulo aparece só para o administrador da plataforma. Essa
+trava está na rota e nas server actions (`requirePlatformAdmin`), **não no RLS** — no
+banco a regra é "cada um vê o próprio histórico", que é a regra definitiva. Para liberar
+para todos, basta remover a checagem de admin; o banco não muda.
 
 ## Como rodar local
 ```bash

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { Avatar, Stat } from "@/components/ui";
+import { isPlatformAdminEmail } from "@/lib/admin";
 import { displayName, shortDate } from "@/lib/format";
 
 export default async function Home() {
@@ -67,6 +68,21 @@ export default async function Home() {
         <Stat label="Jogos" value={games} />
         <Stat label="Pontos" value={points} />
       </div>
+
+      {isPlatformAdminEmail(user?.email) && (
+        <Link
+          href="/app/externos"
+          className="card mb-6 flex items-center justify-between !p-4"
+        >
+          <div>
+            <p className="font-semibold">🏖️ Torneios de fora</p>
+            <p className="text-xs text-slate-500">
+              Histórico e relatórios dos torneios que não são do Ligaset
+            </p>
+          </div>
+          <span className="shrink-0 text-slate-300">›</span>
+        </Link>
+      )}
 
       <section className="mb-6">
         <div className="mb-2 flex items-center justify-between">
