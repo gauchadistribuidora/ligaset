@@ -24,13 +24,19 @@ Site em produção: **https://ligaset.com.br**
 | `lib/` | Regras de negócio: `draw.ts` (sorteio), `bracket.ts` (chaveamento), `finance.ts` (financeiro), `reports.ts` (relatórios), `email.ts`/`notify.ts` (envios), `data.ts` (consultas), `types.ts` |
 | `lib/supabase/` | Clientes do Supabase: `client.ts` (browser), `server.ts` (server), `middleware.ts` (sessão), `admin.ts` (service role — **nunca usar em código de cliente**) |
 | `app/app/externos/` | **Torneios de fora** — histórico pessoal dos torneios que não são do Ligaset. Regras em `lib/external.ts`, ações em `app/actions/external.ts` |
-| `supabase/migrations/` | Migrations versionadas, `0001` a `0015` |
+| `supabase/migrations/` | Migrations versionadas, `0001` a `0016` |
 
 ### Torneios de fora (módulo em teste)
 Cada jogador registra os torneios que disputa fora da plataforma: torneio, data,
 categoria, parceiro e os jogos (fase, dupla adversária, placar por set). O resultado
 final — Campeão, Vice, "parou nas quartas" — é **calculado** a partir dos jogos; nunca
 digitado. O fluxo é fechado pelos botões **Avançou** / **Foi eliminada**.
+
+**Federação** (FGT, FGBT, CBT ou outra) é texto livre no banco de propósito — federação
+nova não pode exigir migration. **O nome do torneio se reaproveita**: a lista de torneios
+já cadastrados vira opção no formulário, porque os mesmos torneios se repetem ao longo do
+ano em datas diferentes. Escolher um traz a federação dele junto. Essa lista é **derivada**
+dos torneios do jogador, não é tabela — cadastrou uma vez, aparece nas próximas.
 
 **Categoria** é fechada: nível (Pro, A, B, C, D, Iniciante) + naipe (Masculina, Feminina,
 Mista), gravados juntos numa string do tipo `"B Feminina"` — é por ela que os relatórios

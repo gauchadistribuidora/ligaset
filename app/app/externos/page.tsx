@@ -130,6 +130,7 @@ function TournamentRow({ t }: { t: any }) {
           {t.name}
         </p>
         <p className="truncate text-xs text-slate-500">
+          {t.federation ? `${t.federation} • ` : ""}
           {shortDate(t.tournament_date)}
           {t.category ? ` • ${t.category}` : ""}
           {t.partner_name ? ` • com ${t.partner_name}` : ""}

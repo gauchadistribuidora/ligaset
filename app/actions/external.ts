@@ -42,6 +42,14 @@ export async function createExternalTournament(formData: FormData) {
   );
   const partner_name = String(formData.get("partner_name") || "").trim() || null;
 
+  // A tela manda "__outra__" quando a federação não é uma das conhecidas;
+  // nesse caso o nome vem do campo digitado ao lado.
+  const fedOption = String(formData.get("federation_option") || "").trim();
+  const federation =
+    (fedOption === "__outra__"
+      ? String(formData.get("federation_other") || "").trim()
+      : fedOption) || null;
+
   if (!name) return { error: "Informe o nome do torneio." };
 
   // "planned" = torneio que ela ainda vai jogar. Fica na agenda até começar.
@@ -55,6 +63,7 @@ export async function createExternalTournament(formData: FormData) {
       tournament_date,
       category,
       partner_name,
+      federation,
       status: planned ? "planned" : "ongoing",
       current_phase: "group",
     })

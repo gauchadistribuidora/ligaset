@@ -73,6 +73,7 @@ export default async function ExternalTournamentDetail({
   const next = nextPhase(currentPhase);
 
   const subtitleParts = [
+    t.federation,
     shortDate(t.tournament_date),
     t.category,
     t.partner_name ? `com ${t.partner_name}` : null,

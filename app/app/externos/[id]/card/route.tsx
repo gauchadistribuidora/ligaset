@@ -38,6 +38,7 @@ export async function GET(
       result: resultLabel(t).toUpperCase(),
       accent: t.champion ? "#fbbf24" : "#34d399",
       details: [
+        t.federation,
         date,
         t.category,
         t.partner_name ? `com ${t.partner_name}` : "",

@@ -80,6 +80,18 @@ export function splitCategory(category: string | null): {
   return { level, gender };
 }
 
+// ---------- federações ----------
+
+// As conhecidas ficam prontas na tela; qualquer outra pode ser digitada.
+export const FEDERATIONS = ["FGT", "FGBT", "CBT"] as const;
+
+// Um torneio que se repete ao longo do ano — mesmo nome, datas diferentes.
+// A lista sai dos torneios que o jogador já cadastrou.
+export type ExternalEvent = {
+  name: string;
+  federation: string | null;
+};
+
 // ---------- duplas adversárias ----------
 
 export type ExternalPair = {

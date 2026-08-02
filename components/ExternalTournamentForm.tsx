@@ -2,21 +2,47 @@
 
 import { useState, useTransition } from "react";
 import { createExternalTournament } from "@/app/actions/external";
-import { CATEGORY_GENDERS, CATEGORY_LEVELS } from "@/lib/external";
+import {
+  CATEGORY_GENDERS,
+  CATEGORY_LEVELS,
+  FEDERATIONS,
+  type ExternalEvent,
+} from "@/lib/external";
 
+const NEW_EVENT = "__novo__";
 const NEW_PARTNER = "__novo__";
+const OTHER_FED = "__outra__";
 
 export default function ExternalTournamentForm({
   partners,
+  events,
 }: {
   partners: string[];
+  events: ExternalEvent[];
 }) {
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
+
+  const [event, setEvent] = useState(NEW_EVENT);
+  const [federation, setFederation] = useState("");
   const [partner, setPartner] = useState(partners.length ? "" : NEW_PARTNER);
 
-  // Sem lista ainda, ou escolheu "outro": digita o nome.
+  const typingEvent = event === NEW_EVENT;
   const typingPartner = !partners.length || partner === NEW_PARTNER;
+  const typingFederation = federation === OTHER_FED;
+
+  // Escolher um torneio já cadastrado traz a federação dele junto.
+  function onPickEvent(value: string) {
+    setEvent(value);
+    if (value === NEW_EVENT) return;
+    const found = events.find((e) => e.name === value);
+    if (!found?.federation) return;
+    setFederation(
+      (FEDERATIONS as readonly string[]).includes(found.federation)
+        ? found.federation
+        : OTHER_FED
+    );
+  }
 
   function onSubmit(formData: FormData) {
     setError(null);
@@ -30,12 +56,65 @@ export default function ExternalTournamentForm({
     <form action={onSubmit} className="card space-y-3">
       <div>
         <label className="label">Torneio *</label>
-        <input
-          name="name"
-          required
-          placeholder="Ex: Open de Verão"
+
+        {events.length > 0 && (
+          <select
+            value={event}
+            onChange={(e) => onPickEvent(e.target.value)}
+            className="input mb-2"
+          >
+            <option value={NEW_EVENT}>➕ Novo torneio (digitar)</option>
+            {events.map((e) => (
+              <option key={e.name} value={e.name}>
+                {e.name}
+                {e.federation ? ` · ${e.federation}` : ""}
+              </option>
+            ))}
+          </select>
+        )}
+
+        {typingEvent ? (
+          <input
+            name="name"
+            required
+            placeholder="Ex: Open de Verão"
+            className="input"
+          />
+        ) : (
+          <input type="hidden" name="name" value={event} />
+        )}
+
+        {events.length > 0 && typingEvent && (
+          <p className="mt-1.5 text-xs text-slate-400">
+            Torneio que se repete no ano? Cadastre uma vez — nas próximas edições
+            ele aparece na lista acima, já com a federação.
+          </p>
+        )}
+      </div>
+
+      <div>
+        <label className="label">Federação</label>
+        <select
+          name="federation_option"
+          value={federation}
+          onChange={(e) => setFederation(e.target.value)}
           className="input"
-        />
+        >
+          <option value="">Selecione...</option>
+          {FEDERATIONS.map((f) => (
+            <option key={f} value={f}>
+              {f}
+            </option>
+          ))}
+          <option value={OTHER_FED}>➕ Outra (digitar)</option>
+        </select>
+        {typingFederation && (
+          <input
+            name="federation_other"
+            placeholder="Nome da federação"
+            className="input mt-2"
+          />
+        )}
       </div>
 
       <div>
