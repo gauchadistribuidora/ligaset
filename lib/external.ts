@@ -55,6 +55,50 @@ export function nextPhase(p: string): Phase | null {
   return PHASES[i + 1];
 }
 
+// ---------- categorias ----------
+
+export const CATEGORY_LEVELS = ["Pro", "A", "B", "C", "D", "Iniciante"] as const;
+export const CATEGORY_GENDERS = ["Masculina", "Feminina", "Mista"] as const;
+
+// "B" + "Feminina" = "B Feminina". É essa string que fica gravada e é por ela
+// que os relatórios agrupam.
+export function composeCategory(level: string, gender: string): string | null {
+  const parts = [level.trim(), gender.trim()].filter(Boolean);
+  return parts.length ? parts.join(" ") : null;
+}
+
+export function splitCategory(category: string | null): {
+  level: string;
+  gender: string;
+} {
+  if (!category) return { level: "", gender: "" };
+  const gender =
+    (CATEGORY_GENDERS as readonly string[]).find((g) =>
+      category.endsWith(g)
+    ) ?? "";
+  const level = category.slice(0, category.length - gender.length).trim();
+  return { level, gender };
+}
+
+// ---------- duplas adversárias ----------
+
+export type ExternalPair = {
+  id: string;
+  player1: string;
+  player2: string;
+};
+
+// Grava sempre na mesma ordem, para "Ana/Bia" e "Bia/Ana" serem a mesma dupla.
+export function normalizePair(a: string, b: string): [string, string] {
+  const x = a.trim();
+  const y = b.trim();
+  return x.localeCompare(y, "pt-BR") <= 0 ? [x, y] : [y, x];
+}
+
+export function pairLabel(p: { player1: string; player2: string }): string {
+  return `${p.player1} / ${p.player2}`;
+}
+
 export type ExternalTournament = {
   id: string;
   name: string;

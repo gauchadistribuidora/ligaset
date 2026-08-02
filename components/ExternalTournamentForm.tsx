@@ -2,13 +2,12 @@
 
 import { useState, useTransition } from "react";
 import { createExternalTournament } from "@/app/actions/external";
+import { CATEGORY_GENDERS, CATEGORY_LEVELS } from "@/lib/external";
 
 export default function ExternalTournamentForm({
   partners,
-  categories,
 }: {
   partners: string[];
-  categories: string[];
 }) {
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -33,24 +32,30 @@ export default function ExternalTournamentForm({
         />
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className="label">Data</label>
-          <input name="tournament_date" type="date" className="input" />
-        </div>
-        <div>
-          <label className="label">Categoria</label>
-          <input
-            name="category"
-            list="ext-categories"
-            placeholder="Ex: B feminina"
-            className="input"
-          />
-          <datalist id="ext-categories">
-            {categories.map((c) => (
-              <option key={c} value={c} />
+      <div>
+        <label className="label">Data</label>
+        <input name="tournament_date" type="date" className="input" />
+      </div>
+
+      <div>
+        <label className="label">Categoria</label>
+        <div className="grid grid-cols-2 gap-2">
+          <select name="category_level" defaultValue="" className="input">
+            <option value="">Nível...</option>
+            {CATEGORY_LEVELS.map((l) => (
+              <option key={l} value={l}>
+                {l}
+              </option>
             ))}
-          </datalist>
+          </select>
+          <select name="category_gender" defaultValue="" className="input">
+            <option value="">Naipe...</option>
+            {CATEGORY_GENDERS.map((g) => (
+              <option key={g} value={g}>
+                {g}
+              </option>
+            ))}
+          </select>
         </div>
       </div>
 

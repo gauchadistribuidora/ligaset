@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { Avatar, Stat } from "@/components/ui";
-import { isPlatformAdminEmail } from "@/lib/admin";
+import { isExternalTester } from "@/lib/admin";
 import { displayName, shortDate } from "@/lib/format";
 
 export default async function Home() {
@@ -69,7 +69,7 @@ export default async function Home() {
         <Stat label="Pontos" value={points} />
       </div>
 
-      {isPlatformAdminEmail(user?.email) && (
+      {isExternalTester(user) && (
         <Link
           href="/app/externos"
           className="card mb-6 flex items-center justify-between !p-4"

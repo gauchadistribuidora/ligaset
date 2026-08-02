@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { requirePlatformAdmin } from "@/lib/admin";
+import { requireExternalTester } from "@/lib/admin";
 import { EmptyState, PageHeader, Stat } from "@/components/ui";
 import { shortDate } from "@/lib/format";
 import { PHASE_SHORT, resultShort, resultStyle, type Phase } from "@/lib/external";
@@ -8,7 +8,7 @@ import { PHASE_SHORT, resultShort, resultStyle, type Phase } from "@/lib/externa
 export const dynamic = "force-dynamic";
 
 export default async function ExternosPage() {
-  const ctx = await requirePlatformAdmin();
+  const ctx = await requireExternalTester();
   if (!ctx) notFound();
   const { supabase, user } = ctx;
 
@@ -51,13 +51,18 @@ export default async function ExternosPage() {
         <Stat label="Vitórias" value={`${pct}%`} valueClassName="text-xl" />
       </div>
 
-      <div className="mb-6 grid grid-cols-2 gap-2">
-        <Link href="/app/externos/novo" className="btn-primary">
+      <div className="mb-6 space-y-2">
+        <Link href="/app/externos/novo" className="btn-primary w-full">
           ＋ Novo torneio
         </Link>
-        <Link href="/app/externos/relatorios" className="btn-ghost">
-          📊 Relatórios
-        </Link>
+        <div className="grid grid-cols-2 gap-2">
+          <Link href="/app/externos/relatorios" className="btn-ghost">
+            📊 Relatórios
+          </Link>
+          <Link href="/app/externos/duplas" className="btn-ghost">
+            🎾 Duplas
+          </Link>
+        </div>
       </div>
 
       {!tournaments.length && (

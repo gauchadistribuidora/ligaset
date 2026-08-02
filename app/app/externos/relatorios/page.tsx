@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { requirePlatformAdmin } from "@/lib/admin";
+import { requireExternalTester } from "@/lib/admin";
 import { EmptyState, PageHeader, Stat } from "@/components/ui";
 import { shortDate } from "@/lib/format";
 import {
@@ -23,7 +23,7 @@ import {
 export const dynamic = "force-dynamic";
 
 export default async function RelatoriosExternosPage() {
-  const ctx = await requirePlatformAdmin();
+  const ctx = await requireExternalTester();
   if (!ctx) notFound();
   const { supabase, user } = ctx;
 

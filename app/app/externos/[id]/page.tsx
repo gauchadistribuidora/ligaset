@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { requirePlatformAdmin } from "@/lib/admin";
+import { requireExternalTester } from "@/lib/admin";
 import { PageHeader } from "@/components/ui";
 import ExternalMatchForm from "@/components/ExternalMatchForm";
 import ExternalOutcome, { ReopenExternalButton } from "@/components/ExternalOutcome";
@@ -29,7 +29,7 @@ export default async function ExternalTournamentDetail({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const ctx = await requirePlatformAdmin();
+  const ctx = await requireExternalTester();
   if (!ctx) notFound();
   const { supabase, user } = ctx;
 
@@ -41,11 +41,18 @@ export default async function ExternalTournamentDetail({
     .single();
   if (!t) notFound();
 
-  const { data: rawMatches } = await supabase
-    .from("external_matches")
-    .select("*")
-    .eq("tournament_id", id)
-    .order("created_at", { ascending: true });
+  const [{ data: rawMatches }, { data: pairs }] = await Promise.all([
+    supabase
+      .from("external_matches")
+      .select("*")
+      .eq("tournament_id", id)
+      .order("created_at", { ascending: true }),
+    supabase
+      .from("external_pairs")
+      .select("id, player1, player2")
+      .eq("user_id", user.id)
+      .order("player1", { ascending: true }),
+  ]);
 
   const matches = (rawMatches ?? []).map((m: any) => ({
     ...m,
@@ -118,7 +125,11 @@ export default async function ExternalTournamentDetail({
 
       {t.status !== "finished" && (
         <div className="space-y-3">
-          <ExternalMatchForm tournamentId={t.id} defaultPhase={currentPhase} />
+          <ExternalMatchForm
+            tournamentId={t.id}
+            defaultPhase={currentPhase}
+            pairs={pairs ?? []}
+          />
           {playedCurrentPhase && (
             <ExternalOutcome
               tournamentId={t.id}

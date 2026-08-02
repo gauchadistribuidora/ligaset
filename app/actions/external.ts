@@ -2,26 +2,29 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { requirePlatformAdmin } from "@/lib/admin";
+import { requireExternalTester } from "@/lib/admin";
 import {
+  composeCategory,
   gamesFromSets,
   isPhase,
   nextPhase,
+  normalizePair,
   phaseOrder,
   wonFromSets,
   type Phase,
 } from "@/lib/external";
 
-// Enquanto o módulo está em teste, só o administrador da plataforma escreve.
+// Enquanto o módulo está em teste, só quem está na lista de testadores escreve.
 // A checagem fica aqui no servidor — esconder o botão na tela não é proteção.
 async function guard() {
-  const ctx = await requirePlatformAdmin();
+  const ctx = await requireExternalTester();
   if (!ctx) return null;
   return ctx;
 }
 
 function refresh(tournamentId?: string) {
   revalidatePath("/app/externos");
+  revalidatePath("/app/externos/duplas");
   revalidatePath("/app/externos/relatorios");
   if (tournamentId) revalidatePath(`/app/externos/${tournamentId}`);
 }
@@ -33,7 +36,10 @@ export async function createExternalTournament(formData: FormData) {
 
   const name = String(formData.get("name") || "").trim();
   const tournament_date = String(formData.get("tournament_date") || "") || null;
-  const category = String(formData.get("category") || "").trim() || null;
+  const category = composeCategory(
+    String(formData.get("category_level") || ""),
+    String(formData.get("category_gender") || "")
+  );
   const partner_name = String(formData.get("partner_name") || "").trim() || null;
 
   if (!name) return { error: "Informe o nome do torneio." };
@@ -60,7 +66,7 @@ export async function createExternalTournament(formData: FormData) {
 export async function addExternalMatch(tournamentId: string, formData: FormData) {
   const ctx = await guard();
   if (!ctx) return { error: "Sem permissão." };
-  const { supabase } = ctx;
+  const { supabase, user } = ctx;
 
   const phase = String(formData.get("phase") || "");
   if (!isPhase(phase)) return { error: "Fase inválida." };
@@ -95,6 +101,15 @@ export async function addExternalMatch(tournamentId: string, formData: FormData)
     won,
   });
   if (error) return { error: error.message };
+
+  // Dupla nova digitada na mão já entra na agenda, para o próximo lançamento
+  // ser só escolher na lista. Se já existir, o índice único barra e seguimos.
+  if (opponent1 && opponent2) {
+    const [p1, p2] = normalizePair(opponent1, opponent2);
+    await supabase
+      .from("external_pairs")
+      .insert({ user_id: user.id, player1: p1, player2: p2 });
+  }
 
   const { data: t } = await supabase
     .from("external_tournaments")
@@ -217,6 +232,44 @@ export async function deleteExternalMatch(tournamentId: string, matchId: string)
   if (error) return { error: error.message };
 
   refresh(tournamentId);
+  return { ok: true };
+}
+
+// ---------- agenda de duplas adversárias ----------
+
+export async function createExternalPair(formData: FormData) {
+  const ctx = await guard();
+  if (!ctx) return { error: "Sem permissão." };
+  const { supabase, user } = ctx;
+
+  const a = String(formData.get("player1") || "").trim();
+  const b = String(formData.get("player2") || "").trim();
+  if (!a || !b) return { error: "Informe o nome das duas jogadoras." };
+
+  const [p1, p2] = normalizePair(a, b);
+  const { error } = await supabase
+    .from("external_pairs")
+    .insert({ user_id: user.id, player1: p1, player2: p2 });
+
+  if (error) {
+    if (error.code === "23505") return { error: "Essa dupla já está cadastrada." };
+    return { error: error.message };
+  }
+  refresh();
+  return { ok: true };
+}
+
+export async function deleteExternalPair(pairId: string) {
+  const ctx = await guard();
+  if (!ctx) return { error: "Sem permissão." };
+
+  const { error } = await ctx.supabase
+    .from("external_pairs")
+    .delete()
+    .eq("id", pairId);
+  if (error) return { error: error.message };
+
+  refresh();
   return { ok: true };
 }
 

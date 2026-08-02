@@ -2,17 +2,31 @@
 
 import { useState, useTransition } from "react";
 import { addExternalMatch } from "@/app/actions/external";
-import { PHASES, PHASE_LABEL, type Phase } from "@/lib/external";
+import {
+  PHASES,
+  PHASE_LABEL,
+  pairLabel,
+  type ExternalPair,
+  type Phase,
+} from "@/lib/external";
+
+const NEW_PAIR = "__nova__";
 
 export default function ExternalMatchForm({
   tournamentId,
   defaultPhase,
+  pairs,
 }: {
   tournamentId: string;
   defaultPhase: Phase;
+  pairs: ExternalPair[];
 }) {
   const [pending, start] = useTransition();
   const [msg, setMsg] = useState<{ ok?: boolean; error?: string } | null>(null);
+  const [pairId, setPairId] = useState(pairs.length ? pairs[0].id : NEW_PAIR);
+
+  const selected = pairs.find((p) => p.id === pairId);
+  const typing = !selected;
 
   function onSubmit(formData: FormData) {
     setMsg(null);
@@ -21,6 +35,8 @@ export default function ExternalMatchForm({
       setMsg(res ?? null);
       if (res?.ok) {
         (document.getElementById("ext-match-form") as HTMLFormElement)?.reset();
+        // Volta para a lista: a dupla recém-digitada já foi guardada.
+        if (pairs.length) setPairId(pairs[0].id);
       }
     });
   }
@@ -42,10 +58,39 @@ export default function ExternalMatchForm({
 
         <div>
           <label className="label">Dupla adversária</label>
-          <div className="grid grid-cols-2 gap-2">
-            <input name="opponent1" placeholder="Jogadora 1" className="input" />
-            <input name="opponent2" placeholder="Jogadora 2" className="input" />
-          </div>
+
+          {pairs.length > 0 && (
+            <select
+              value={pairId}
+              onChange={(e) => setPairId(e.target.value)}
+              className="input mb-2"
+            >
+              {pairs.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {pairLabel(p)}
+                </option>
+              ))}
+              <option value={NEW_PAIR}>➕ Outra dupla (digitar)</option>
+            </select>
+          )}
+
+          {typing ? (
+            <>
+              <div className="grid grid-cols-2 gap-2">
+                <input name="opponent1" placeholder="Jogadora 1" className="input" />
+                <input name="opponent2" placeholder="Jogadora 2" className="input" />
+              </div>
+              <p className="mt-1.5 text-xs text-slate-400">
+                A dupla fica salva automaticamente — no próximo jogo é só
+                escolher na lista.
+              </p>
+            </>
+          ) : (
+            <>
+              <input type="hidden" name="opponent1" value={selected.player1} />
+              <input type="hidden" name="opponent2" value={selected.player2} />
+            </>
+          )}
         </div>
 
         <div>
