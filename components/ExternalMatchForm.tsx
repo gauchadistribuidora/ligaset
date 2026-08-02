@@ -5,16 +5,13 @@ import { addExternalMatch } from "@/app/actions/external";
 import {
   PHASES,
   PHASE_LABEL,
+  SET_LABELS,
   pairLabel,
   type ExternalPair,
   type Phase,
 } from "@/lib/external";
 
 const NEW_PAIR = "__nova__";
-
-// No beach tennis o terceiro set é o super tie-break — na quadra todo mundo
-// chama de "Super Tiezão".
-const SET_LABELS = ["Set 1", "Set 2", "Super Tiezão"];
 
 export default function ExternalMatchForm({
   tournamentId,

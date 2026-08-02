@@ -40,7 +40,7 @@ export default async function ExternosPage() {
   return (
     <div>
       <PageHeader
-        title="Torneios de fora"
+        title="Torneios Federados"
         subtitle="Torneios que não fazem parte do Ligaset — CBT, FGT, FGBT"
         back="/app"
       />

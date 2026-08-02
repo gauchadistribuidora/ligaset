@@ -31,6 +31,10 @@ const PHASE_IN: Record<Phase, string> = {
   final: "na final",
 };
 
+// No beach tennis o terceiro set é o super tie-break — na quadra todo mundo
+// chama de "Super Tiezão".
+export const SET_LABELS = ["Set 1", "Set 2", "Super Tiezão"];
+
 export function isPhase(v: string): v is Phase {
   return (PHASES as readonly string[]).includes(v);
 }
@@ -47,7 +51,18 @@ export function nextPhase(p: string): Phase | null {
 
 // ---------- categorias ----------
 
-export const CATEGORY_LEVELS = ["Pro", "A", "B", "C", "D", "Iniciante"] as const;
+export const CATEGORY_LEVELS = [
+  "Pro",
+  "A",
+  "B",
+  "C",
+  "D",
+  "Iniciante",
+  "Sub 12",
+  "Sub 14",
+  "Sub 16",
+  "Sub 18",
+] as const;
 export const CATEGORY_GENDERS = ["Masculina", "Feminina", "Mista"] as const;
 
 // "B" + "Feminina" = "B Feminina". É essa string que fica gravada e é por ela

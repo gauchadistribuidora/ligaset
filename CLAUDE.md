@@ -23,10 +23,10 @@ Site em produção: **https://ligaset.com.br**
 | `components/` | Componentes de UI (MatchCard, Bracket, formulários, etc.) |
 | `lib/` | Regras de negócio: `draw.ts` (sorteio), `bracket.ts` (chaveamento), `finance.ts` (financeiro), `reports.ts` (relatórios), `email.ts`/`notify.ts` (envios), `data.ts` (consultas), `types.ts` |
 | `lib/supabase/` | Clientes do Supabase: `client.ts` (browser), `server.ts` (server), `middleware.ts` (sessão), `admin.ts` (service role — **nunca usar em código de cliente**) |
-| `app/app/externos/` | **Torneios de fora** — histórico pessoal dos torneios que não são do Ligaset. Regras em `lib/external.ts`, ações em `app/actions/external.ts` |
-| `supabase/migrations/` | Migrations versionadas, `0001` a `0016` |
+| `app/app/externos/` | **Torneios Federados** — histórico pessoal dos torneios de federação (CBT, FGT, FGBT). Regras em `lib/external.ts`, ações em `app/actions/external.ts` |
+| `supabase/migrations/` | Migrations versionadas, `0001` a `0017` |
 
-### Torneios de fora (módulo em teste)
+### Torneios Federados (módulo em teste)
 Cada jogador registra os torneios que disputa fora da plataforma: torneio, data,
 categoria, parceiro e os jogos (fase, dupla adversária, placar por set). O resultado
 final — Campeão, Vice, "eliminado (a) nas quartas" — é **calculado** a partir dos jogos; nunca
@@ -49,10 +49,16 @@ parceiro**, então "Ana Paula" digitado de três jeitos viraria três pessoas.
 desempenho por categoria, freguês e carrasco (mínimo de 2 confrontos), como foi em cada
 torneio e a lista de todos os resultados.
 
-O **placar é por set**, e o terceiro set se chama "Super Tiezão" na tela — é o super
-tie-break, e é assim que se fala na quadra. A **categoria já vem preenchida** com a última
-que o jogador informou (naipe começa em Masculina), porque quem joga a C Masculina joga
-sempre a mesma.
+O **placar é por set**, mostrado em formato de súmula (nossa dupla em cima, adversária
+embaixo, games à direita), e o terceiro set se chama "Super Tiezão" na tela — é o super
+tie-break, e é assim que se fala na quadra. Cada jogo pode ser **editado ou excluído**. A
+**categoria já vem preenchida** com a última que o jogador informou (naipe começa em
+Masculina), porque quem joga a C Masculina joga sempre a mesma. Níveis incluem Pro, A, B,
+C, D, Iniciante e as categorias Sub 12 a Sub 18.
+
+Ao encerrar, o app **pergunta se a pessoa quer registrar uma observação sobre a própria
+performance** (`external_tournaments.notes`). Responder "não" finaliza direto; a
+observação também pode ser escrita ou editada depois, na tela do torneio encerrado.
 
 **Quem enxerga:** enquanto está em teste, só a lista de testadores — admins da plataforma
 mais os ids em `EXTERNAL_TESTER_IDS` (`requireExternalTester` em `lib/admin.ts`).

@@ -2,28 +2,30 @@ import { notFound } from "next/navigation";
 import { requireExternalTester } from "@/lib/admin";
 import { PageHeader } from "@/components/ui";
 import ExternalMatchForm from "@/components/ExternalMatchForm";
+import ExternalMatchRow from "@/components/ExternalMatchRow";
+import ExternalNotes from "@/components/ExternalNotes";
 import ExternalOutcome, {
   ReopenExternalButton,
   StartExternalButton,
 } from "@/components/ExternalOutcome";
-import {
-  DeleteExternalMatchButton,
-  DeleteExternalTournamentButton,
-} from "@/components/ExternalDeleteButtons";
+import { DeleteExternalTournamentButton } from "@/components/ExternalDeleteButtons";
 import { shortDate } from "@/lib/format";
 import {
-  formatSets,
   nextPhase,
-  opponentLabel,
   parseSets,
   phaseOrder,
-  PHASE_LABEL,
   resultLabel,
   resultStyle,
+  type ExternalMatch,
   type Phase,
 } from "@/lib/external";
 
 export const dynamic = "force-dynamic";
+
+// "Henrique Nunes" -> "Henrique". Nome curto cabe melhor no placar do celular.
+function firstName(full: string | null | undefined): string {
+  return full?.trim().split(/\s+/)[0] ?? "";
+}
 
 export default async function ExternalTournamentDetail({
   params,
@@ -43,23 +45,25 @@ export default async function ExternalTournamentDetail({
     .single();
   if (!t) notFound();
 
-  const [{ data: rawMatches }, { data: pairs }] = await Promise.all([
-    supabase
-      .from("external_matches")
-      .select("*")
-      .eq("tournament_id", id)
-      .order("created_at", { ascending: true }),
-    supabase
-      .from("external_pairs")
-      .select("id, player1, player2")
-      .eq("user_id", user.id)
-      .order("player1", { ascending: true }),
-  ]);
+  const [{ data: rawMatches }, { data: pairs }, { data: profile }] =
+    await Promise.all([
+      supabase
+        .from("external_matches")
+        .select("*")
+        .eq("tournament_id", id)
+        .order("created_at", { ascending: true }),
+      supabase
+        .from("external_pairs")
+        .select("id, player1, player2")
+        .eq("user_id", user.id)
+        .order("player1", { ascending: true }),
+      supabase.from("profiles").select("full_name").eq("id", user.id).single(),
+    ]);
 
   const matches = (rawMatches ?? []).map((m: any) => ({
     ...m,
     set_scores: parseSets(m.set_scores),
-  }));
+  })) as ExternalMatch[];
 
   // Ordena por fase (grupos primeiro) mantendo a ordem de lançamento dentro dela.
   const ordered = [...matches].sort(
@@ -71,11 +75,14 @@ export default async function ExternalTournamentDetail({
   const playedCurrentPhase = matches.some((m) => m.phase === currentPhase);
   const next = nextPhase(currentPhase);
 
+  const myPair = [firstName(profile?.full_name) || "Eu", firstName(t.partner_name)]
+    .filter(Boolean)
+    .join(" / ");
+
   const subtitleParts = [
     t.federation,
     shortDate(t.tournament_date),
     t.category,
-    t.partner_name ? `com ${t.partner_name}` : null,
   ].filter(Boolean);
 
   return (
@@ -99,29 +106,12 @@ export default async function ExternalTournamentDetail({
       {ordered.length > 0 && (
         <section className="mb-5 space-y-2">
           {ordered.map((m) => (
-            <div key={m.id} className="card flex items-center gap-3 !p-4">
-              <span
-                className={`grid h-9 w-9 shrink-0 place-items-center rounded-full text-sm font-black ${
-                  m.won
-                    ? "bg-court-100 text-court-700"
-                    : "bg-rose-100 text-rose-600"
-                }`}
-              >
-                {m.won ? "V" : "D"}
-              </span>
-              <div className="min-w-0 flex-1">
-                <p className="text-xs font-semibold text-slate-400">
-                  {PHASE_LABEL[m.phase as Phase] ?? m.phase}
-                </p>
-                <p className="truncate text-sm font-semibold text-slate-800">
-                  {opponentLabel(m)}
-                </p>
-                <p className="text-xs text-slate-500">
-                  {formatSets(m.set_scores)}
-                </p>
-              </div>
-              <DeleteExternalMatchButton tournamentId={t.id} matchId={m.id} />
-            </div>
+            <ExternalMatchRow
+              key={m.id}
+              tournamentId={t.id}
+              match={m}
+              myPair={myPair}
+            />
           ))}
         </section>
       )}
@@ -155,6 +145,7 @@ export default async function ExternalTournamentDetail({
             Torneio encerrado como <strong>{resultLabel(t)}</strong>. Precisa
             corrigir alguma coisa? Reabra, ajuste os jogos e encerre de novo.
           </div>
+          <ExternalNotes tournamentId={t.id} notes={t.notes} />
           <ReopenExternalButton tournamentId={t.id} />
         </div>
       )}

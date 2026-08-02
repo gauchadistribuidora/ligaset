@@ -75,7 +75,7 @@ export default async function Home() {
           className="card mb-6 flex items-center justify-between !p-4"
         >
           <div>
-            <p className="font-semibold">🎾 Torneios de fora</p>
+            <p className="font-semibold">🎾 Torneios Federados</p>
             <p className="text-xs text-slate-500">
               Histórico e relatórios de torneios que não fazem parte do Ligaset —
               CBT, FGT, FGBT

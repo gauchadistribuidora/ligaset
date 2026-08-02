@@ -22,6 +22,22 @@ async function guard() {
   return ctx;
 }
 
+// Até 3 sets (o terceiro é o super tie-break); conta só os preenchidos dos
+// dois lados.
+function setsFromForm(formData: FormData): number[][] {
+  const sets: number[][] = [];
+  for (let i = 1; i <= 3; i++) {
+    const rawA = String(formData.get(`s${i}a`) || "").trim();
+    const rawB = String(formData.get(`s${i}b`) || "").trim();
+    if (rawA === "" || rawB === "") continue;
+    const a = Number(rawA);
+    const b = Number(rawB);
+    if (!Number.isFinite(a) || !Number.isFinite(b) || a < 0 || b < 0) continue;
+    sets.push([a, b]);
+  }
+  return sets;
+}
+
 function refresh(tournamentId?: string) {
   revalidatePath("/app/externos");
   revalidatePath("/app/externos/duplas");
@@ -129,17 +145,7 @@ export async function addExternalMatch(tournamentId: string, formData: FormData)
   const opponent1 = String(formData.get("opponent1") || "").trim() || null;
   const opponent2 = String(formData.get("opponent2") || "").trim() || null;
 
-  // Até 3 sets; conta só os que vierem preenchidos dos dois lados.
-  const sets: number[][] = [];
-  for (let i = 1; i <= 3; i++) {
-    const rawA = String(formData.get(`s${i}a`) || "").trim();
-    const rawB = String(formData.get(`s${i}b`) || "").trim();
-    if (rawA === "" || rawB === "") continue;
-    const a = Number(rawA);
-    const b = Number(rawB);
-    if (!Number.isFinite(a) || !Number.isFinite(b) || a < 0 || b < 0) continue;
-    sets.push([a, b]);
-  }
+  const sets = setsFromForm(formData);
   if (!sets.length) return { error: "Informe o placar de pelo menos um set." };
 
   const { gamesFor, gamesAgainst } = gamesFromSets(sets);
@@ -196,6 +202,56 @@ export async function addExternalMatch(tournamentId: string, formData: FormData)
   return { ok: true };
 }
 
+export async function updateExternalMatch(
+  tournamentId: string,
+  matchId: string,
+  formData: FormData
+) {
+  const ctx = await guard();
+  if (!ctx) return { error: "Sem permissão." };
+  const { supabase } = ctx;
+
+  const phase = String(formData.get("phase") || "");
+  if (!isPhase(phase)) return { error: "Fase inválida." };
+
+  const sets = setsFromForm(formData);
+  if (!sets.length) return { error: "Informe o placar de pelo menos um set." };
+
+  const { gamesFor, gamesAgainst } = gamesFromSets(sets);
+
+  const { error } = await supabase
+    .from("external_matches")
+    .update({
+      phase,
+      opponent1: String(formData.get("opponent1") || "").trim() || null,
+      opponent2: String(formData.get("opponent2") || "").trim() || null,
+      set_scores: sets,
+      games_for: gamesFor,
+      games_against: gamesAgainst,
+      won: wonFromSets(sets),
+    })
+    .eq("id", matchId);
+  if (error) return { error: error.message };
+
+  refresh(tournamentId);
+  return { ok: true };
+}
+
+// Observação da jogadora sobre a própria performance no torneio.
+export async function saveExternalNotes(tournamentId: string, notes: string) {
+  const ctx = await guard();
+  if (!ctx) return { error: "Sem permissão." };
+
+  const { error } = await ctx.supabase
+    .from("external_tournaments")
+    .update({ notes: notes.trim() || null })
+    .eq("id", tournamentId);
+  if (error) return { error: error.message };
+
+  refresh(tournamentId);
+  return { ok: true };
+}
+
 // Tira o torneio da agenda e começa a valer para lançar jogos.
 export async function startExternalTournament(tournamentId: string) {
   const ctx = await guard();
@@ -240,7 +296,7 @@ export async function advanceExternalPhase(tournamentId: string) {
 }
 
 // Botão "Foi eliminada" — encerra o torneio na fase mais avançada que ela jogou.
-export async function eliminateExternal(tournamentId: string) {
+export async function eliminateExternal(tournamentId: string, notes?: string) {
   const ctx = await guard();
   if (!ctx) return { error: "Sem permissão." };
   const { supabase } = ctx;
@@ -270,7 +326,12 @@ export async function eliminateExternal(tournamentId: string) {
 
   const { error } = await supabase
     .from("external_tournaments")
-    .update({ status: "finished", final_phase: reached, champion: false })
+    .update({
+      status: "finished",
+      final_phase: reached,
+      champion: false,
+      ...(notes !== undefined ? { notes: notes.trim() || null } : {}),
+    })
     .eq("id", tournamentId);
   if (error) return { error: error.message };
 

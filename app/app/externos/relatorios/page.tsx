@@ -55,7 +55,7 @@ export default async function RelatoriosExternosPage() {
       <div>
         <PageHeader
           title="Relatórios"
-          subtitle="Torneios de fora"
+          subtitle="Torneios Federados"
           back="/app/externos"
         />
         <EmptyState
