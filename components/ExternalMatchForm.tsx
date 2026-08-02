@@ -12,6 +12,10 @@ import {
 
 const NEW_PAIR = "__nova__";
 
+// No beach tennis o terceiro set é o super tie-break — na quadra todo mundo
+// chama de "Super Tiezão".
+const SET_LABELS = ["Set 1", "Set 2", "Super Tiezão"];
+
 export default function ExternalMatchForm({
   tournamentId,
   defaultPhase,
@@ -96,30 +100,33 @@ export default function ExternalMatchForm({
         <div>
           <label className="label">Placar por set</label>
           <div className="space-y-2">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="flex items-center gap-2">
-                <span className="w-12 shrink-0 text-xs font-semibold text-slate-500">
-                  Set {i}
-                </span>
-                <input
-                  name={`s${i}a`}
-                  type="number"
-                  min={0}
-                  inputMode="numeric"
-                  placeholder="nós"
-                  className="input text-center"
-                />
-                <span className="text-slate-400">×</span>
-                <input
-                  name={`s${i}b`}
-                  type="number"
-                  min={0}
-                  inputMode="numeric"
-                  placeholder="elas"
-                  className="input text-center"
-                />
-              </div>
-            ))}
+            {SET_LABELS.map((label, idx) => {
+              const i = idx + 1;
+              return (
+                <div key={i} className="flex items-center gap-2">
+                  <span className="w-20 shrink-0 text-xs font-semibold leading-tight text-slate-500">
+                    {label}
+                  </span>
+                  <input
+                    name={`s${i}a`}
+                    type="number"
+                    min={0}
+                    inputMode="numeric"
+                    placeholder="Nós"
+                    className="input text-center"
+                  />
+                  <span className="text-slate-400">×</span>
+                  <input
+                    name={`s${i}b`}
+                    type="number"
+                    min={0}
+                    inputMode="numeric"
+                    placeholder="Adversários"
+                    className="input text-center"
+                  />
+                </div>
+              );
+            })}
           </div>
           <p className="mt-1.5 text-xs text-slate-400">
             Preencha só os sets que foram jogados. Quem venceu é calculado

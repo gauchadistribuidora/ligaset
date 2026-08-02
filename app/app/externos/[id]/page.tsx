@@ -18,7 +18,6 @@ import {
   parseSets,
   phaseOrder,
   PHASE_LABEL,
-  PHASE_TO,
   resultLabel,
   resultStyle,
   type Phase,
@@ -145,10 +144,7 @@ export default async function ExternalTournamentDetail({
             pairs={pairs ?? []}
           />
           {playedCurrentPhase && (
-            <ExternalOutcome
-              tournamentId={t.id}
-              nextPhaseLabel={next ? PHASE_TO[next] : null}
-            />
+            <ExternalOutcome tournamentId={t.id} canAdvance={!!next} />
           )}
         </div>
       )}
@@ -159,19 +155,6 @@ export default async function ExternalTournamentDetail({
             Torneio encerrado como <strong>{resultLabel(t)}</strong>. Precisa
             corrigir alguma coisa? Reabra, ajuste os jogos e encerre de novo.
           </div>
-          <a
-            href={`/app/externos/${t.id}/card`}
-            download={`ligaset-${t.name}.png`}
-            target="_blank"
-            rel="noopener"
-            className="btn-dark w-full"
-          >
-            📸 Card para o Instagram
-          </a>
-          <p className="text-center text-xs text-slate-400">
-            Abre a imagem pronta para postar. No celular, segure o dedo nela para
-            salvar na galeria.
-          </p>
           <ReopenExternalButton tournamentId={t.id} />
         </div>
       )}

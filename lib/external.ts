@@ -21,16 +21,6 @@ export const PHASE_SHORT: Record<Phase, string> = {
   final: "Final",
 };
 
-// Usado no botão "Avançou para as quartas".
-export const PHASE_TO: Record<Phase, string> = {
-  group: "a fase de grupos",
-  r32: "os 16 avos",
-  r16: "as oitavas",
-  qf: "as quartas",
-  sf: "a semifinal",
-  final: "a final",
-};
-
 // Usado no texto "parou nas quartas", "parou na fase de grupos".
 const PHASE_IN: Record<Phase, string> = {
   group: "na fase de grupos",

@@ -16,9 +16,13 @@ const OTHER_FED = "__outra__";
 export default function ExternalTournamentForm({
   partners,
   events,
+  defaultCategory,
 }: {
   partners: string[];
   events: ExternalEvent[];
+  // Vem da última categoria informada — quem joga a C Masculina joga sempre a
+  // mesma, então já vem preenchida.
+  defaultCategory: { level: string; gender: string };
 }) {
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -125,7 +129,11 @@ export default function ExternalTournamentForm({
       <div>
         <label className="label">Categoria</label>
         <div className="grid grid-cols-2 gap-2">
-          <select name="category_level" defaultValue="" className="input">
+          <select
+            name="category_level"
+            defaultValue={defaultCategory.level}
+            className="input"
+          >
             <option value="">Nível...</option>
             {CATEGORY_LEVELS.map((l) => (
               <option key={l} value={l}>
@@ -133,8 +141,11 @@ export default function ExternalTournamentForm({
               </option>
             ))}
           </select>
-          <select name="category_gender" defaultValue="" className="input">
-            <option value="">Naipe...</option>
+          <select
+            name="category_gender"
+            defaultValue={defaultCategory.gender}
+            className="input"
+          >
             {CATEGORY_GENDERS.map((g) => (
               <option key={g} value={g}>
                 {g}

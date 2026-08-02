@@ -12,10 +12,10 @@ import {
 // se resolve sozinho, sem a jogadora precisar dizer "cheguei na semi".
 export default function ExternalOutcome({
   tournamentId,
-  nextPhaseLabel,
+  canAdvance,
 }: {
   tournamentId: string;
-  nextPhaseLabel: string | null;
+  canAdvance: boolean;
 }) {
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -24,7 +24,7 @@ export default function ExternalOutcome({
     <div className="card space-y-3">
       <p className="text-sm font-semibold text-slate-700">E aí, como terminou?</p>
       <div className="grid gap-2">
-        {nextPhaseLabel && (
+        {canAdvance && (
           <button
             disabled={pending}
             onClick={() => {
@@ -36,7 +36,7 @@ export default function ExternalOutcome({
             }}
             className="btn-primary w-full"
           >
-            ✅ Avançou para {nextPhaseLabel}
+            ✅ Avançou de fase
           </button>
         )}
         <button
@@ -51,7 +51,7 @@ export default function ExternalOutcome({
           }}
           className="btn-ghost w-full"
         >
-          ❌ Foi eliminada aqui
+          ❌ Foi eliminado (a) aqui
         </button>
       </div>
       {error && <p className="text-sm text-rose-500">{error}</p>}

@@ -47,9 +47,12 @@ parceiro**, então "Ana Paula" digitado de três jeitos viraria três pessoas.
 
 **Relatórios:** aproveitamento e saldo geral, melhor/pior dupla (mínimo de 3 jogos),
 desempenho por categoria, freguês e carrasco (mínimo de 2 confrontos), como foi em cada
-torneio e a lista de todos os resultados. Torneio encerrado gera um **card 1080x1350 para
-o Instagram** em `/app/externos/[id]/card`, via `ImageResponse` do próprio Next — sem
-biblioteca nova.
+torneio e a lista de todos os resultados.
+
+O **placar é por set**, e o terceiro set se chama "Super Tiezão" na tela — é o super
+tie-break, e é assim que se fala na quadra. A **categoria já vem preenchida** com a última
+que o jogador informou (naipe começa em Masculina), porque quem joga a C Masculina joga
+sempre a mesma.
 
 **Quem enxerga:** enquanto está em teste, só a lista de testadores — admins da plataforma
 mais os ids em `EXTERNAL_TESTER_IDS` (`requireExternalTester` em `lib/admin.ts`).
