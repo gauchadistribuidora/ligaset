@@ -1,0 +1,78 @@
+# Projeto Ligaset
+
+## Sobre o projeto
+Ligaset é a plataforma de **beach tennis** para organizar grupos, torneios, rankings e
+mensalidades. Web app responsivo (mobile-first / PWA) — os jogadores usam pelo celular,
+na beira da quadra. Dono do produto: Henrique (Gaúcha Distribuidora).
+
+Site em produção: **https://ligaset.com.br**
+
+## Stack técnico
+- **Next.js 14** (App Router + Server Actions) + React 18 + TypeScript
+- **Tailwind CSS** — tema esportivo, mobile-first
+- **Supabase** — Postgres, Auth (Google + magic link + senha), Storage, Row Level Security
+- **Resend** — envio de e-mails (relatórios, convites, comunicados)
+- **SheetJS (xlsx)** — exportação de relatórios
+- **Deploy:** Vercel (time `Gaúcha Distribuidora`, projeto `ligaset`)
+
+## Onde fica cada coisa
+| Pasta | O que tem |
+|---|---|
+| `app/` | Páginas e rotas. `app/app/**` é a área logada; a raiz tem landing, login, termos e privacidade |
+| `app/actions/` | Server Actions — toda escrita no banco passa por aqui (grupos, torneios, pagamentos, financeiro, conta, admin) |
+| `components/` | Componentes de UI (MatchCard, Bracket, formulários, etc.) |
+| `lib/` | Regras de negócio: `draw.ts` (sorteio), `bracket.ts` (chaveamento), `finance.ts` (financeiro), `reports.ts` (relatórios), `email.ts`/`notify.ts` (envios), `data.ts` (consultas), `types.ts` |
+| `lib/supabase/` | Clientes do Supabase: `client.ts` (browser), `server.ts` (server), `middleware.ts` (sessão), `admin.ts` (service role — **nunca usar em código de cliente**) |
+| `supabase/migrations/` | Migrations versionadas, `0001` a `0012` |
+
+## Como rodar local
+```bash
+cd C:\Users\DESKTOP\Documents\GitHub\ligaset
+npm install
+npm run dev
+```
+Precisa do arquivo `.env.local` na raiz (não vai para o Git). Veja `.env.local.example`
+para a lista completa de variáveis. As chaves ficam no painel do Supabase em
+*Project Settings → API* e no painel da Vercel em *Settings → Environment Variables*.
+
+## Como publicar
+O deploy é **automático**: todo push no branch `main` do GitHub
+(`gauchadistribuidora/ligaset`) dispara build na Vercel e, se passar, vai para produção
+em `ligaset.com.br`. Não existe passo manual.
+
+```bash
+git add -A
+git commit -m "feat: descrição curta do que mudou"
+git push origin main
+```
+
+Se um deploy quebrar, a produção **continua no último build bom** — dá para reverter pelo
+painel da Vercel (Deployments → escolher um anterior → Rollback).
+
+## Banco de dados (Supabase)
+- Projeto: `izjrqunvwxhaspbxjsht` (região sa-east-1)
+- **Migrations sempre versionadas** em `supabase/migrations/`. Nunca alterar tabela direto
+  pelo painel — senão o repositório e o banco saem de sincronia e ninguém mais sabe o que
+  está valendo.
+- **RLS é obrigatório** em toda tabela com dado de jogador ou financeiro. A regra base está
+  em `0003_rls.sql`; o admin de plataforma em `0012_platform_admin.sql`.
+- Papéis dentro de um grupo: **dono**, **admin** e **jogador**. Acima deles existe o
+  **admin de plataforma** (controlado por `PLATFORM_ADMIN_EMAILS`).
+
+## Regras de trabalho
+- **Português do Brasil** em toda a UI, mensagens de erro e nomes de domínio
+  (jogador, grupo, torneio, mensalidade, quadra).
+- **Mobile-first sempre.** A tela padrão de uso é um celular na beira da quadra.
+- **Commits pequenos e descritivos** em português.
+- **Não instalar dependência nova sem avisar** o motivo.
+- Henrique **não é desenvolvedor**: explique em português claro e proponha sempre o
+  caminho mais simples que funciona.
+
+## Quirks conhecidos (não são bugs, mas confundem)
+- O `name` no `package.json` ainda é `btplay` — nome antigo do projeto. Só cosmético.
+- A pasta `_to_delete/` tem sobra de migração antiga (`_head.tar`). Pode ser removida.
+- O repositório é **público** no GitHub. Nenhuma chave secreta pode entrar em arquivo
+  versionado — só em `.env.local` (local) e nas variáveis de ambiente da Vercel.
+- Há vários PRs abertos do **Dependabot** com upgrades major (Next 16, React 19,
+  Tailwind 4, TypeScript 7) cujos builds falham. São atualizações que quebram o projeto —
+  não fazer merge sem migração planejada.
