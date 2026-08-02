@@ -5,6 +5,7 @@ import {
   advanceExternalPhase,
   eliminateExternal,
   reopenExternalTournament,
+  startExternalTournament,
 } from "@/app/actions/external";
 
 // Os dois botões que fecham a fase: é aqui que o histórico do torneio
@@ -55,6 +56,23 @@ export default function ExternalOutcome({
       </div>
       {error && <p className="text-sm text-rose-500">{error}</p>}
     </div>
+  );
+}
+
+export function StartExternalButton({ tournamentId }: { tournamentId: string }) {
+  const [pending, start] = useTransition();
+  return (
+    <button
+      disabled={pending}
+      onClick={() =>
+        start(async () => {
+          await startExternalTournament(tournamentId);
+        })
+      }
+      className="btn-primary w-full"
+    >
+      {pending ? "Começando..." : "🎾 Começar torneio"}
+    </button>
   );
 }
 

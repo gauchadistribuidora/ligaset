@@ -33,14 +33,15 @@ export default async function ExternosPage() {
   }
   const pct = played ? Math.round((wins / played) * 100) : 0;
 
-  const ongoing = tournaments.filter((t) => t.status !== "finished");
+  const ongoing = tournaments.filter((t) => t.status === "ongoing");
+  const planned = tournaments.filter((t) => t.status === "planned");
   const finished = tournaments.filter((t) => t.status === "finished");
 
   return (
     <div>
       <PageHeader
         title="Torneios de fora"
-        subtitle="Seu histórico dos torneios que não são do Ligaset"
+        subtitle="Torneios que não fazem parte do Ligaset — CBT, FGT, FGBT"
         back="/app"
       />
 
@@ -60,14 +61,14 @@ export default async function ExternosPage() {
             📊 Relatórios
           </Link>
           <Link href="/app/externos/duplas" className="btn-ghost">
-            🎾 Duplas
+            🤝 Parceiros
           </Link>
         </div>
       </div>
 
       {!tournaments.length && (
         <EmptyState
-          icon="🏖️"
+          icon="🎾"
           title="Nenhum torneio ainda"
           desc="Cadastre um torneio que você jogou fora do Ligaset e vá lançando os jogos. O resultado final o sistema calcula sozinho."
           action={
@@ -83,6 +84,17 @@ export default async function ExternosPage() {
           <h2 className="mb-2 font-bold text-slate-800">Em andamento</h2>
           <div className="space-y-2">
             {ongoing.map((t) => (
+              <TournamentRow key={t.id} t={t} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {planned.length > 0 && (
+        <section className="mb-6">
+          <h2 className="mb-2 font-bold text-slate-800">Vou jogar</h2>
+          <div className="space-y-2">
+            {planned.map((t) => (
               <TournamentRow key={t.id} t={t} />
             ))}
           </div>
@@ -123,8 +135,12 @@ function TournamentRow({ t }: { t: any }) {
           {t.partner_name ? ` • com ${t.partner_name}` : ""}
         </p>
         <p className="mt-0.5 text-xs text-slate-400">
-          {total ? `${won}V ${total - won}D` : "Sem jogos lançados"}
-          {t.status !== "finished" &&
+          {t.status === "planned"
+            ? "Ainda não começou"
+            : total
+              ? `${won}V ${total - won}D`
+              : "Sem jogos lançados"}
+          {t.status === "ongoing" &&
             ` • ${PHASE_SHORT[t.current_phase as Phase] ?? ""}`}
         </p>
       </div>

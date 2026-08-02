@@ -2,7 +2,10 @@ import { notFound } from "next/navigation";
 import { requireExternalTester } from "@/lib/admin";
 import { PageHeader } from "@/components/ui";
 import ExternalMatchForm from "@/components/ExternalMatchForm";
-import ExternalOutcome, { ReopenExternalButton } from "@/components/ExternalOutcome";
+import ExternalOutcome, {
+  ReopenExternalButton,
+  StartExternalButton,
+} from "@/components/ExternalOutcome";
 import {
   DeleteExternalMatchButton,
   DeleteExternalTournamentButton,
@@ -123,7 +126,17 @@ export default async function ExternalTournamentDetail({
         </section>
       )}
 
-      {t.status !== "finished" && (
+      {t.status === "planned" && (
+        <div className="space-y-3">
+          <div className="card text-sm text-slate-600">
+            Este torneio está na sua agenda e ainda não começou. Quando chegar o
+            dia, comece por aqui para liberar o lançamento dos jogos.
+          </div>
+          <StartExternalButton tournamentId={t.id} />
+        </div>
+      )}
+
+      {t.status === "ongoing" && (
         <div className="space-y-3">
           <ExternalMatchForm
             tournamentId={t.id}
@@ -145,6 +158,19 @@ export default async function ExternalTournamentDetail({
             Torneio encerrado como <strong>{resultLabel(t)}</strong>. Precisa
             corrigir alguma coisa? Reabra, ajuste os jogos e encerre de novo.
           </div>
+          <a
+            href={`/app/externos/${t.id}/card`}
+            download={`ligaset-${t.name}.png`}
+            target="_blank"
+            rel="noopener"
+            className="btn-dark w-full"
+          >
+            📸 Card para o Instagram
+          </a>
+          <p className="text-center text-xs text-slate-400">
+            Abre a imagem pronta para postar. No celular, segure o dedo nela para
+            salvar na galeria.
+          </p>
           <ReopenExternalButton tournamentId={t.id} />
         </div>
       )}

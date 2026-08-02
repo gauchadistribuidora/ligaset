@@ -5,9 +5,12 @@ import { EmptyState, PageHeader, Stat } from "@/components/ui";
 import { shortDate } from "@/lib/format";
 import {
   balance,
+  categoryRanking,
   formatSets,
+  MIN_MATCHES_OPPONENT,
   MIN_MATCHES_RANKING,
   opponentLabel,
+  opponentRanking,
   parseSets,
   partnerRanking,
   phaseOrder,
@@ -16,6 +19,7 @@ import {
   resultStyle,
   winRate,
   type ExternalMatch,
+  type OpponentStats,
   type PartnerStats,
   type Phase,
 } from "@/lib/external";
@@ -85,6 +89,14 @@ export default async function RelatoriosExternosPage() {
   const best = ranked[0];
   const worst = ranked.length > 1 ? ranked[ranked.length - 1] : null;
 
+  const categories = categoryRanking(tournaments);
+
+  const { ranked: opponents, few: fewOpponents } = opponentRanking(
+    allMatches as ExternalMatch[]
+  );
+  const fregues = opponents[0];
+  const carrasco = opponents.length > 1 ? opponents[opponents.length - 1] : null;
+
   const finished = tournaments.filter((t) => t.status === "finished");
 
   return (
@@ -119,6 +131,7 @@ export default async function RelatoriosExternosPage() {
             <HighlightCard
               icon="🥇"
               title="Melhor dupla"
+              name={best.partner}
               stats={best}
               tone="bg-court-50 ring-court-100"
             />
@@ -126,6 +139,7 @@ export default async function RelatoriosExternosPage() {
               <HighlightCard
                 icon="🥶"
                 title="Pior dupla"
+                name={worst.partner}
                 stats={worst}
                 tone="bg-rose-50 ring-rose-100"
               />
@@ -178,7 +192,124 @@ export default async function RelatoriosExternosPage() {
         )}
       </section>
 
-      {/* 3 — como foi em cada torneio */}
+      {/* 3 — desempenho por categoria */}
+      <section className="mb-6">
+        <h2 className="mb-2 font-bold text-slate-800">Por categoria</h2>
+        {categories.length ? (
+          <div className="card !p-0">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-slate-100 text-xs text-slate-500">
+                  <th className="p-3 text-left font-medium">Categoria</th>
+                  <th className="p-3 text-center font-medium">J</th>
+                  <th className="p-3 text-center font-medium">%</th>
+                  <th className="p-3 text-center font-medium">Saldo</th>
+                  <th className="p-3 text-center font-medium">🏆</th>
+                </tr>
+              </thead>
+              <tbody>
+                {categories.map((c) => (
+                  <tr
+                    key={c.category}
+                    className="border-b border-slate-50 last:border-0"
+                  >
+                    <td className="p-3 font-semibold text-slate-800">
+                      {c.category}
+                    </td>
+                    <td className="p-3 text-center text-slate-500">{c.played}</td>
+                    <td className="p-3 text-center font-bold text-slate-800">
+                      {winRate(c)}%
+                    </td>
+                    <td className="p-3 text-center text-slate-500">
+                      {balance(c) > 0 ? "+" : ""}
+                      {balance(c)}
+                    </td>
+                    <td className="p-3 text-center text-slate-500">
+                      {c.titles || "—"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div className="card text-sm text-slate-500">
+            Preencha a categoria ao cadastrar o torneio para este relatório
+            aparecer.
+          </div>
+        )}
+      </section>
+
+      {/* 4 — freguês e carrasco */}
+      <section className="mb-6">
+        <h2 className="mb-2 font-bold text-slate-800">Freguês e carrasco</h2>
+        {fregues ? (
+          <>
+            <div className="mb-3 grid gap-2">
+              <HighlightCard
+                icon="🍬"
+                title="Freguês — a dupla que você mais vence"
+                name={fregues.opponent}
+                stats={fregues}
+                tone="bg-court-50 ring-court-100"
+              />
+              {carrasco && (
+                <HighlightCard
+                  icon="😤"
+                  title="Carrasco — a dupla que mais te vence"
+                  name={carrasco.opponent}
+                  stats={carrasco}
+                  tone="bg-rose-50 ring-rose-100"
+                />
+              )}
+            </div>
+            <div className="card !p-0">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-slate-100 text-xs text-slate-500">
+                    <th className="p-3 text-left font-medium">Dupla</th>
+                    <th className="p-3 text-center font-medium">J</th>
+                    <th className="p-3 text-center font-medium">V</th>
+                    <th className="p-3 text-center font-medium">%</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {opponents.map((o) => (
+                    <tr
+                      key={o.opponent}
+                      className="border-b border-slate-50 last:border-0"
+                    >
+                      <td className="p-3 font-semibold text-slate-800">
+                        {o.opponent}
+                      </td>
+                      <td className="p-3 text-center text-slate-500">
+                        {o.played}
+                      </td>
+                      <td className="p-3 text-center text-slate-500">{o.wins}</td>
+                      <td className="p-3 text-center font-bold text-slate-800">
+                        {winRate(o)}%
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
+        ) : (
+          <div className="card text-sm text-slate-500">
+            Este relatório aparece quando você enfrentar a mesma dupla pelo menos{" "}
+            {MIN_MATCHES_OPPONENT} vezes.
+          </div>
+        )}
+        {fewOpponents.length > 0 && (
+          <p className="mt-2 text-xs text-slate-400">
+            {fewOpponents.length} dupla(s) enfrentada(s) uma única vez ainda não
+            entram nesta conta.
+          </p>
+        )}
+      </section>
+
+      {/* 5 — como foi em cada torneio */}
       <section className="mb-6">
         <h2 className="mb-2 font-bold text-slate-800">Como foi em cada torneio</h2>
         {finished.length ? (
@@ -261,12 +392,14 @@ export default async function RelatoriosExternosPage() {
 function HighlightCard({
   icon,
   title,
+  name,
   stats,
   tone,
 }: {
   icon: string;
   title: string;
-  stats: PartnerStats;
+  name: string;
+  stats: PartnerStats | OpponentStats;
   tone: string;
 }) {
   return (
@@ -276,9 +409,7 @@ function HighlightCard({
           <p className="text-xs font-medium text-slate-500">
             {icon} {title}
           </p>
-          <p className="truncate text-lg font-black text-slate-900">
-            {stats.partner}
-          </p>
+          <p className="truncate text-lg font-black text-slate-900">{name}</p>
           <p className="text-xs text-slate-500">
             {stats.wins}V {stats.losses}D em {stats.played} jogos • saldo{" "}
             {balance(stats) > 0 ? "+" : ""}

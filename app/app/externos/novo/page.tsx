@@ -10,18 +10,15 @@ export default async function NovoExternoPage() {
   if (!ctx) notFound();
   const { supabase, user } = ctx;
 
-  // Sugestões a partir do que já foi cadastrado, para o nome do parceiro sair
-  // sempre igual e o relatório de duplas não fragmentar por causa de digitação.
+  // A lista de parceiros é o que garante que o mesmo parceiro seja sempre o
+  // mesmo nome — senão o relatório de melhor/pior dupla se fragmenta.
   const { data } = await supabase
-    .from("external_tournaments")
-    .select("partner_name")
-    .eq("user_id", user.id);
+    .from("external_partners")
+    .select("name")
+    .eq("user_id", user.id)
+    .order("name", { ascending: true });
 
-  const partners = [
-    ...new Set(
-      (data ?? []).map((r) => r.partner_name?.trim()).filter(Boolean) as string[]
-    ),
-  ].sort((a, b) => a.localeCompare(b, "pt-BR"));
+  const partners = (data ?? []).map((r) => r.name);
 
   return (
     <div>

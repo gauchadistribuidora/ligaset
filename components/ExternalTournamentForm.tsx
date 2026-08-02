@@ -4,6 +4,8 @@ import { useState, useTransition } from "react";
 import { createExternalTournament } from "@/app/actions/external";
 import { CATEGORY_GENDERS, CATEGORY_LEVELS } from "@/lib/external";
 
+const NEW_PARTNER = "__novo__";
+
 export default function ExternalTournamentForm({
   partners,
 }: {
@@ -11,6 +13,10 @@ export default function ExternalTournamentForm({
 }) {
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [partner, setPartner] = useState(partners.length ? "" : NEW_PARTNER);
+
+  // Sem lista ainda, ou escolheu "outro": digita o nome.
+  const typingPartner = !partners.length || partner === NEW_PARTNER;
 
   function onSubmit(formData: FormData) {
     setError(null);
@@ -61,22 +67,56 @@ export default function ExternalTournamentForm({
 
       <div>
         <label className="label">Parceiro(a)</label>
-        <input
-          name="partner_name"
-          list="ext-partners"
-          placeholder="Quem jogou com você"
-          className="input"
-        />
-        <datalist id="ext-partners">
-          {partners.map((p) => (
-            <option key={p} value={p} />
-          ))}
-        </datalist>
-        <p className="mt-1.5 text-xs text-slate-400">
-          Escreva sempre do mesmo jeito — é por esse nome que o relatório de
-          melhor e pior dupla junta os jogos.
-        </p>
+
+        {partners.length > 0 && (
+          <select
+            value={partner}
+            onChange={(e) => setPartner(e.target.value)}
+            className="input mb-2"
+          >
+            <option value="">Selecione...</option>
+            {partners.map((p) => (
+              <option key={p} value={p}>
+                {p}
+              </option>
+            ))}
+            <option value={NEW_PARTNER}>➕ Outro parceiro (digitar)</option>
+          </select>
+        )}
+
+        {typingPartner ? (
+          <>
+            <input
+              name="partner_name"
+              placeholder="Quem jogou com você"
+              className="input"
+            />
+            <p className="mt-1.5 text-xs text-slate-400">
+              O nome entra na sua lista de parceiros. Da próxima vez é só
+              escolher — é assim que o relatório de melhor e pior dupla não se
+              perde com nomes escritos de jeitos diferentes.
+            </p>
+          </>
+        ) : (
+          <input type="hidden" name="partner_name" value={partner} />
+        )}
       </div>
+
+      <label className="flex items-start gap-3 rounded-xl bg-slate-50 p-3">
+        <input
+          type="checkbox"
+          name="planned"
+          className="mt-0.5 h-5 w-5 shrink-0 accent-court-500"
+        />
+        <span className="text-sm text-slate-600">
+          <strong className="font-semibold text-slate-800">
+            Ainda vou jogar
+          </strong>
+          <br />
+          Só agenda o torneio. Ele fica esperando na lista e você começa a lançar
+          os jogos quando ele acontecer.
+        </span>
+      </label>
 
       <button disabled={pending} className="btn-primary w-full">
         {pending ? "Criando..." : "Criar torneio"}

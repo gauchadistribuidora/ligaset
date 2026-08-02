@@ -24,7 +24,7 @@ Site em produção: **https://ligaset.com.br**
 | `lib/` | Regras de negócio: `draw.ts` (sorteio), `bracket.ts` (chaveamento), `finance.ts` (financeiro), `reports.ts` (relatórios), `email.ts`/`notify.ts` (envios), `data.ts` (consultas), `types.ts` |
 | `lib/supabase/` | Clientes do Supabase: `client.ts` (browser), `server.ts` (server), `middleware.ts` (sessão), `admin.ts` (service role — **nunca usar em código de cliente**) |
 | `app/app/externos/` | **Torneios de fora** — histórico pessoal dos torneios que não são do Ligaset. Regras em `lib/external.ts`, ações em `app/actions/external.ts` |
-| `supabase/migrations/` | Migrations versionadas, `0001` a `0014` |
+| `supabase/migrations/` | Migrations versionadas, `0001` a `0015` |
 
 ### Torneios de fora (módulo em teste)
 Cada jogador registra os torneios que disputa fora da plataforma: torneio, data,
@@ -34,8 +34,16 @@ digitado. O fluxo é fechado pelos botões **Avançou** / **Foi eliminada**.
 
 **Categoria** é fechada: nível (Pro, A, B, C, D, Iniciante) + naipe (Masculina, Feminina,
 Mista), gravados juntos numa string do tipo `"B Feminina"` — é por ela que os relatórios
-agrupam. **Duplas adversárias** ficam em `external_pairs`, uma agenda por jogador: toda
-dupla digitada ao lançar um jogo entra sozinha na lista e depois é só escolher.
+agrupam. **Parceiros** (`external_partners`) e **duplas adversárias** (`external_pairs`)
+são listas por jogador: o que for digitado entra sozinho na lista e, dali em diante, é só
+escolher. Isso não é conveniência — o relatório de melhor/pior dupla agrupa **pelo nome do
+parceiro**, então "Ana Paula" digitado de três jeitos viraria três pessoas.
+
+**Relatórios:** aproveitamento e saldo geral, melhor/pior dupla (mínimo de 3 jogos),
+desempenho por categoria, freguês e carrasco (mínimo de 2 confrontos), como foi em cada
+torneio e a lista de todos os resultados. Torneio encerrado gera um **card 1080x1350 para
+o Instagram** em `/app/externos/[id]/card`, via `ImageResponse` do próprio Next — sem
+biblioteca nova.
 
 **Quem enxerga:** enquanto está em teste, só a lista de testadores — admins da plataforma
 mais os ids em `EXTERNAL_TESTER_IDS` (`requireExternalTester` em `lib/admin.ts`).

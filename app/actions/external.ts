@@ -44,6 +44,9 @@ export async function createExternalTournament(formData: FormData) {
 
   if (!name) return { error: "Informe o nome do torneio." };
 
+  // "planned" = torneio que ela ainda vai jogar. Fica na agenda até começar.
+  const planned = formData.get("planned") === "on";
+
   const { data, error } = await supabase
     .from("external_tournaments")
     .insert({
@@ -52,15 +55,58 @@ export async function createExternalTournament(formData: FormData) {
       tournament_date,
       category,
       partner_name,
-      status: "ongoing",
+      status: planned ? "planned" : "ongoing",
       current_phase: "group",
     })
     .select("id")
     .single();
 
   if (error) return { error: error.message };
+
+  // Parceiro digitado na mão já entra na lista, para o próximo torneio ser só
+  // escolher — é a digitação repetida que estraga o relatório de duplas.
+  if (partner_name) {
+    await supabase
+      .from("external_partners")
+      .insert({ user_id: user.id, name: partner_name });
+  }
+
   refresh();
   redirect(`/app/externos/${data.id}`);
+}
+
+export async function createExternalPartner(formData: FormData) {
+  const ctx = await guard();
+  if (!ctx) return { error: "Sem permissão." };
+  const { supabase, user } = ctx;
+
+  const name = String(formData.get("name") || "").trim();
+  if (!name) return { error: "Informe o nome do parceiro." };
+
+  const { error } = await supabase
+    .from("external_partners")
+    .insert({ user_id: user.id, name });
+
+  if (error) {
+    if (error.code === "23505") return { error: "Esse parceiro já está na lista." };
+    return { error: error.message };
+  }
+  refresh();
+  return { ok: true };
+}
+
+export async function deleteExternalPartner(partnerId: string) {
+  const ctx = await guard();
+  if (!ctx) return { error: "Sem permissão." };
+
+  const { error } = await ctx.supabase
+    .from("external_partners")
+    .delete()
+    .eq("id", partnerId);
+  if (error) return { error: error.message };
+
+  refresh();
+  return { ok: true };
 }
 
 export async function addExternalMatch(tournamentId: string, formData: FormData) {
@@ -136,6 +182,22 @@ export async function addExternalMatch(tournamentId: string, formData: FormData)
       .update({ current_phase: phase })
       .eq("id", tournamentId);
   }
+
+  refresh(tournamentId);
+  return { ok: true };
+}
+
+// Tira o torneio da agenda e começa a valer para lançar jogos.
+export async function startExternalTournament(tournamentId: string) {
+  const ctx = await guard();
+  if (!ctx) return { error: "Sem permissão." };
+
+  const { error } = await ctx.supabase
+    .from("external_tournaments")
+    .update({ status: "ongoing" })
+    .eq("id", tournamentId)
+    .eq("status", "planned");
+  if (error) return { error: error.message };
 
   refresh(tournamentId);
   return { ok: true };

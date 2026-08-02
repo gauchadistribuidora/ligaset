@@ -252,6 +252,73 @@ export function balance(t: Tally): number {
 // Sem isso, quem jogou uma única partida e venceu apareceria com 100%.
 export const MIN_MATCHES_RANKING = 3;
 
+// Contra a mesma dupla a gente joga menos vezes que com o mesmo parceiro,
+// então aqui o mínimo é menor.
+export const MIN_MATCHES_OPPONENT = 2;
+
+export type OpponentStats = Tally & { opponent: string };
+
+// Freguês e carrasco: contra quais duplas você mais vence e mais perde.
+export function opponentRanking(matches: ExternalMatch[]): {
+  ranked: OpponentStats[];
+  few: OpponentStats[];
+} {
+  const map = new Map<string, Tally>();
+  for (const m of matches) {
+    const [a, b] = normalizePair(m.opponent1 ?? "", m.opponent2 ?? "");
+    const key = [a, b].filter(Boolean).join(" / ");
+    if (!key) continue;
+    map.set(key, addToTally(map.get(key) ?? emptyTally(), m));
+  }
+
+  const all: OpponentStats[] = [...map.entries()].map(([opponent, t]) => ({
+    opponent,
+    ...t,
+  }));
+
+  const sorter = (a: OpponentStats, b: OpponentStats) =>
+    winRate(b) - winRate(a) ||
+    balance(b) - balance(a) ||
+    b.played - a.played ||
+    a.opponent.localeCompare(b.opponent, "pt-BR");
+
+  return {
+    ranked: all.filter((o) => o.played >= MIN_MATCHES_OPPONENT).sort(sorter),
+    few: all
+      .filter((o) => o.played < MIN_MATCHES_OPPONENT)
+      .sort((a, b) => a.opponent.localeCompare(b.opponent, "pt-BR")),
+  };
+}
+
+export type CategoryStats = Tally & { category: string; titles: number };
+
+// Como você vai em cada categoria — ajuda a decidir onde se inscrever.
+export function categoryRanking(
+  tournaments: {
+    category: string | null;
+    champion: boolean;
+    matches: ExternalMatch[];
+  }[]
+): CategoryStats[] {
+  const map = new Map<string, CategoryStats>();
+  for (const t of tournaments) {
+    const key = t.category?.trim() || "Sem categoria";
+    const cur =
+      map.get(key) ?? ({ category: key, titles: 0, ...emptyTally() } as CategoryStats);
+    let tally: Tally = cur;
+    for (const m of t.matches) tally = addToTally(tally, m);
+    map.set(key, {
+      ...cur,
+      ...tally,
+      category: key,
+      titles: cur.titles + (t.champion ? 1 : 0),
+    });
+  }
+  return [...map.values()]
+    .filter((c) => c.played > 0)
+    .sort((a, b) => winRate(b) - winRate(a) || balance(b) - balance(a));
+}
+
 export type PartnerStats = Tally & { partner: string };
 
 export function partnerRanking(
