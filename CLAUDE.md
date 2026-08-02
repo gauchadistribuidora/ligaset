@@ -29,7 +29,7 @@ Site em produção: **https://ligaset.com.br**
 ### Torneios de fora (módulo em teste)
 Cada jogador registra os torneios que disputa fora da plataforma: torneio, data,
 categoria, parceiro e os jogos (fase, dupla adversária, placar por set). O resultado
-final — Campeão, Vice, "parou nas quartas" — é **calculado** a partir dos jogos; nunca
+final — Campeão, Vice, "eliminado (a) nas quartas" — é **calculado** a partir dos jogos; nunca
 digitado. O fluxo é fechado pelos botões **Avançou** / **Foi eliminada**.
 
 **Federação** (FGT, FGBT, CBT ou outra) é texto livre no banco de propósito — federação

@@ -21,7 +21,7 @@ export const PHASE_SHORT: Record<Phase, string> = {
   final: "Final",
 };
 
-// Usado no texto "parou nas quartas", "parou na fase de grupos".
+// Usado no texto "eliminado (a) nas quartas", "eliminado (a) na fase de grupos".
 const PHASE_IN: Record<Phase, string> = {
   group: "na fase de grupos",
   r32: "nos 16 avos",
@@ -137,7 +137,7 @@ export function resultLabel(t: {
   if (t.champion) return "Campeão";
   if (t.final_phase === "final") return "Vice-campeão";
   if (!t.final_phase || !isPhase(t.final_phase)) return "Encerrado";
-  return `Parou ${PHASE_IN[t.final_phase]}`;
+  return `Eliminado (a) ${PHASE_IN[t.final_phase]}`;
 }
 
 // Versão curta para tabela e chip.
