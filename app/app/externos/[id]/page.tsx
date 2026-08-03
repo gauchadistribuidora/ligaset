@@ -4,6 +4,7 @@ import { PageHeader } from "@/components/ui";
 import ExternalMatchForm from "@/components/ExternalMatchForm";
 import ExternalMatchRow from "@/components/ExternalMatchRow";
 import ExternalNotes from "@/components/ExternalNotes";
+import ExternalTournamentEdit from "@/components/ExternalTournamentEdit";
 import ExternalOutcome, {
   ReopenExternalButton,
   StartExternalButton,
@@ -132,15 +133,18 @@ export default async function ExternalTournamentDetail({
       {t.status === "planned" && (
         <div className="space-y-3">
           <div className="card text-sm text-slate-600">
-            Este torneio está na sua agenda e ainda não começou. Quando chegar o
-            dia, comece por aqui para liberar o lançamento dos jogos.
+            Este torneio está na sua agenda e ainda não começou. Antes de
+            começar, confira os dados — se ele entrou como lembrete, falta
+            preencher federação, categoria e parceiro.
           </div>
+          <ExternalTournamentEdit tournament={t} />
           <StartExternalButton tournamentId={t.id} />
         </div>
       )}
 
       {t.status === "ongoing" && (
         <div className="space-y-3">
+          <ExternalTournamentEdit tournament={t} />
           <ExternalMatchForm
             tournamentId={t.id}
             defaultPhase={currentPhase}

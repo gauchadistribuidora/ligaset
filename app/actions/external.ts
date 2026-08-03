@@ -101,6 +101,70 @@ export async function createExternalTournament(formData: FormData) {
   redirect(`/app/externos/${data.id}`);
 }
 
+// Agenda: lembrete rápido de um torneio que vem por aí. Só nome e data — o
+// resto (federação, categoria, parceiro) se preenche quando ele começar.
+export async function quickAddAgenda(formData: FormData) {
+  const ctx = await guard();
+  if (!ctx) return { error: "Sem permissão." };
+  const { supabase, user } = ctx;
+
+  const name = String(formData.get("name") || "").trim();
+  const tournament_date = String(formData.get("tournament_date") || "") || null;
+  if (!name) return { error: "Informe o nome do torneio." };
+
+  const { error } = await supabase.from("external_tournaments").insert({
+    user_id: user.id,
+    name,
+    tournament_date,
+    status: "planned",
+    current_phase: "group",
+  });
+  if (error) return { error: error.message };
+
+  revalidatePath("/app");
+  refresh();
+  return { ok: true };
+}
+
+// Corrigir os dados de um torneio depois de criado — inclusive completar o que
+// ficou em branco quando ele entrou só como lembrete na agenda.
+export async function updateExternalTournament(
+  tournamentId: string,
+  formData: FormData
+) {
+  const ctx = await guard();
+  if (!ctx) return { error: "Sem permissão." };
+
+  const name = String(formData.get("name") || "").trim();
+  if (!name) return { error: "Informe o nome do torneio." };
+
+  const fedOption = String(formData.get("federation_option") || "").trim();
+  const federation =
+    (fedOption === "__outra__"
+      ? String(formData.get("federation_other") || "").trim()
+      : fedOption) || null;
+
+  const { error } = await ctx.supabase
+    .from("external_tournaments")
+    .update({
+      name,
+      tournament_date: String(formData.get("tournament_date") || "") || null,
+      category: composeCategory(
+        String(formData.get("category_level") || ""),
+        String(formData.get("category_gender") || "")
+      ),
+      partner_name:
+        properName(String(formData.get("partner_name") || "")) || null,
+      federation,
+    })
+    .eq("id", tournamentId);
+  if (error) return { error: error.message };
+
+  revalidatePath("/app");
+  refresh(tournamentId);
+  return { ok: true };
+}
+
 export async function createExternalPartner(formData: FormData) {
   const ctx = await guard();
   if (!ctx) return { error: "Sem permissão." };

@@ -2,8 +2,40 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { Avatar, Stat } from "@/components/ui";
 import { isExternalTester } from "@/lib/admin";
+import AgendaQuickAdd from "@/components/AgendaQuickAdd";
 import NewTournamentChoice from "@/components/NewTournamentChoice";
-import { displayName, shortDate } from "@/lib/format";
+
+// Bloquinho de data do mural: 15 / SET.
+function dayMonth(d: string | null): { day: string; month: string } {
+  if (!d) return { day: "–", month: "" };
+  const date = new Date(d.length <= 10 ? d + "T00:00:00" : d);
+  return {
+    day: String(date.getDate()).padStart(2, "0"),
+    month: date
+      .toLocaleDateString("pt-BR", { month: "short" })
+      .replace(".", "")
+      .toUpperCase(),
+  };
+}
+
+// Anotar é o caminho principal; criar o torneio completo fica discreto embaixo.
+function AgendaFooter({ isTester }: { isTester: boolean }) {
+  return (
+    <div className="space-y-2 pt-1">
+      <AgendaQuickAdd showFederated={isTester} />
+      {isTester && (
+        <div className="text-center">
+          <NewTournamentChoice
+            variant="link"
+            label="ou criar o torneio completo"
+            showFederated
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+import { displayName } from "@/lib/format";
 
 export default async function Home() {
   const supabase = await createClient();
@@ -78,7 +110,7 @@ export default async function Home() {
       id: `g-${t.id}`,
       href: `/app/groups/${t.group_id}/tournaments/${t.id}`,
       name: t.name,
-      meta: [t.groups?.name, shortDate(t.date)].filter(Boolean).join(" • "),
+      meta: t.groups?.name ?? "Minha liga",
       status: t.status === "ongoing" ? "Em andamento" : "Agendado",
       date: t.date,
     })),
@@ -86,9 +118,7 @@ export default async function Home() {
       id: `f-${t.id}`,
       href: `/app/externos/${t.id}`,
       name: t.name,
-      meta: [t.federation || "Federado", shortDate(t.tournament_date)]
-        .filter(Boolean)
-        .join(" • "),
+      meta: t.federation || "Federado",
       status: t.status === "ongoing" ? "Em andamento" : "Vou jogar",
       date: t.tournament_date,
     })),
@@ -137,29 +167,41 @@ export default async function Home() {
         </div>
         {agenda.length ? (
           <div className="space-y-2">
-            {agenda.map((t) => (
-              <Link
-                key={t.id}
-                href={t.href}
-                className="card flex items-center justify-between gap-3 !p-4"
-              >
-                <div className="min-w-0">
-                  <p className="truncate font-semibold">{t.name}</p>
-                  <p className="truncate text-xs text-slate-500">{t.meta}</p>
-                </div>
-                <span className="chip shrink-0 bg-ocean-900/5 text-ocean-900">
-                  {t.status}
-                </span>
-              </Link>
-            ))}
-            <div className="pt-1">
-              <NewTournamentChoice showFederated={isTester} />
-            </div>
+            {agenda.map((t) => {
+              const d = dayMonth(t.date);
+              return (
+                <Link
+                  key={t.id}
+                  href={t.href}
+                  className="card flex items-center gap-3 !p-3"
+                >
+                  <span className="grid h-12 w-12 shrink-0 place-content-center justify-items-center rounded-xl bg-ocean-900/5">
+                    <span className="text-lg font-black leading-none text-ocean-900">
+                      {d.day}
+                    </span>
+                    <span className="mt-0.5 text-[10px] font-bold uppercase leading-none text-slate-400">
+                      {d.month}
+                    </span>
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-semibold">{t.name}</p>
+                    <p className="truncate text-xs text-slate-500">{t.meta}</p>
+                  </div>
+                  <span className="chip shrink-0 bg-ocean-900/5 text-ocean-900">
+                    {t.status}
+                  </span>
+                </Link>
+              );
+            })}
+            <AgendaFooter isTester={isTester} />
           </div>
         ) : (
           <div className="card space-y-3 text-sm text-slate-500">
-            <p>Nenhum torneio agendado.</p>
-            <NewTournamentChoice showFederated={isTester} />
+            <p>
+              Nada marcado ainda. Anote os torneios que vêm por aí e eles ficam
+              aqui no mural, à vista toda vez que você abrir o app.
+            </p>
+            <AgendaFooter isTester={isTester} />
           </div>
         )}
       </section>
