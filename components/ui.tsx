@@ -71,7 +71,10 @@ export function PageHeader({
     <header className="mb-5 flex items-start justify-between gap-3">
       <div className="min-w-0">
         {back && (
-          <Link href={back} className="mb-1 inline-block text-sm text-slate-400">
+          <Link
+            href={back}
+            className="mb-2 inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-sm font-semibold text-slate-600 shadow-card ring-1 ring-slate-200 transition active:scale-[.98] hover:text-slate-900"
+          >
             ← Voltar
           </Link>
         )}

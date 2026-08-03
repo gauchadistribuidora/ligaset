@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { Avatar, Stat } from "@/components/ui";
 import { isExternalTester } from "@/lib/admin";
+import NewTournamentChoice from "@/components/NewTournamentChoice";
 import { displayName, shortDate } from "@/lib/format";
 
 export default async function Home() {
@@ -40,7 +41,9 @@ export default async function Home() {
     }
   }
 
-  // próximos torneios
+  // ---- agenda: junta os torneios das ligas com os federados do jogador ----
+  const isTester = isExternalTester(user);
+
   const { data: tournaments } = groupIds.length
     ? await supabase
         .from("tournaments")
@@ -48,8 +51,51 @@ export default async function Home() {
         .in("group_id", groupIds)
         .neq("status", "finished")
         .order("date", { ascending: true })
-        .limit(4)
+        .limit(6)
     : { data: [] as any[] };
+
+  const { data: federated } = isTester
+    ? await supabase
+        .from("external_tournaments")
+        .select("id, name, tournament_date, federation, status")
+        .eq("user_id", user!.id)
+        .neq("status", "finished")
+        .order("tournament_date", { ascending: true })
+        .limit(6)
+    : { data: [] as any[] };
+
+  type AgendaItem = {
+    id: string;
+    href: string;
+    name: string;
+    meta: string;
+    status: string;
+    date: string | null;
+  };
+
+  const agenda: AgendaItem[] = [
+    ...((tournaments ?? []) as any[]).map((t) => ({
+      id: `g-${t.id}`,
+      href: `/app/groups/${t.group_id}/tournaments/${t.id}`,
+      name: t.name,
+      meta: [t.groups?.name, shortDate(t.date)].filter(Boolean).join(" • "),
+      status: t.status === "ongoing" ? "Em andamento" : "Agendado",
+      date: t.date,
+    })),
+    ...((federated ?? []) as any[]).map((t) => ({
+      id: `f-${t.id}`,
+      href: `/app/externos/${t.id}`,
+      name: t.name,
+      meta: [t.federation || "Federado", shortDate(t.tournament_date)]
+        .filter(Boolean)
+        .join(" • "),
+      status: t.status === "ongoing" ? "Em andamento" : "Vou jogar",
+      date: t.tournament_date,
+    })),
+  ]
+    // Sem data vai para o fim — é torneio ainda sem dia marcado.
+    .sort((a, b) => (a.date ?? "9999").localeCompare(b.date ?? "9999"))
+    .slice(0, 6);
 
   return (
     <div>
@@ -69,7 +115,7 @@ export default async function Home() {
         <Stat label="Pontos" value={points} />
       </div>
 
-      {isExternalTester(user) && (
+      {isTester && (
         <Link
           href="/app/externos"
           className="card mb-6 flex items-center justify-between !p-4"
@@ -87,35 +133,33 @@ export default async function Home() {
 
       <section className="mb-6">
         <div className="mb-2 flex items-center justify-between">
-          <h2 className="font-bold text-slate-800">Próximos torneios</h2>
+          <h2 className="font-bold text-slate-800">Agenda de torneios</h2>
         </div>
-        {tournaments && tournaments.length ? (
+        {agenda.length ? (
           <div className="space-y-2">
-            {tournaments.map((t: any) => (
+            {agenda.map((t) => (
               <Link
                 key={t.id}
-                href={`/app/groups/${t.group_id}/tournaments/${t.id}`}
-                className="card flex items-center justify-between !p-4"
+                href={t.href}
+                className="card flex items-center justify-between gap-3 !p-4"
               >
-                <div>
-                  <p className="font-semibold">{t.name}</p>
-                  <p className="text-xs text-slate-500">
-                    {t.groups?.name} • {shortDate(t.date)}
-                  </p>
+                <div className="min-w-0">
+                  <p className="truncate font-semibold">{t.name}</p>
+                  <p className="truncate text-xs text-slate-500">{t.meta}</p>
                 </div>
-                <span className="chip bg-ocean-900/5 text-ocean-900">
-                  {t.status === "ongoing" ? "Em andamento" : "Agendado"}
+                <span className="chip shrink-0 bg-ocean-900/5 text-ocean-900">
+                  {t.status}
                 </span>
               </Link>
             ))}
+            <div className="pt-1">
+              <NewTournamentChoice showFederated={isTester} />
+            </div>
           </div>
         ) : (
-          <div className="card text-sm text-slate-500">
-            Nenhum torneio agendado.{" "}
-            <Link href="/app/groups" className="font-semibold text-court-600">
-              Crie um torneio
-            </Link>
-            .
+          <div className="card space-y-3 text-sm text-slate-500">
+            <p>Nenhum torneio agendado.</p>
+            <NewTournamentChoice showFederated={isTester} />
           </div>
         )}
       </section>

@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireExternalTester } from "@/lib/admin";
+import { properName } from "@/lib/format";
 import {
   composeCategory,
   gamesFromSets,
@@ -56,7 +57,7 @@ export async function createExternalTournament(formData: FormData) {
     String(formData.get("category_level") || ""),
     String(formData.get("category_gender") || "")
   );
-  const partner_name = String(formData.get("partner_name") || "").trim() || null;
+  const partner_name = properName(String(formData.get("partner_name") || "")) || null;
 
   // A tela manda "__outra__" quando a federação não é uma das conhecidas;
   // nesse caso o nome vem do campo digitado ao lado.
@@ -105,7 +106,7 @@ export async function createExternalPartner(formData: FormData) {
   if (!ctx) return { error: "Sem permissão." };
   const { supabase, user } = ctx;
 
-  const name = String(formData.get("name") || "").trim();
+  const name = properName(String(formData.get("name") || ""));
   if (!name) return { error: "Informe o nome do parceiro." };
 
   const { error } = await supabase
@@ -142,8 +143,8 @@ export async function addExternalMatch(tournamentId: string, formData: FormData)
   const phase = String(formData.get("phase") || "");
   if (!isPhase(phase)) return { error: "Fase inválida." };
 
-  const opponent1 = String(formData.get("opponent1") || "").trim() || null;
-  const opponent2 = String(formData.get("opponent2") || "").trim() || null;
+  const opponent1 = properName(String(formData.get("opponent1") || "")) || null;
+  const opponent2 = properName(String(formData.get("opponent2") || "")) || null;
 
   const sets = setsFromForm(formData);
   if (!sets.length) return { error: "Informe o placar de pelo menos um set." };
@@ -223,8 +224,8 @@ export async function updateExternalMatch(
     .from("external_matches")
     .update({
       phase,
-      opponent1: String(formData.get("opponent1") || "").trim() || null,
-      opponent2: String(formData.get("opponent2") || "").trim() || null,
+      opponent1: properName(String(formData.get("opponent1") || "")) || null,
+      opponent2: properName(String(formData.get("opponent2") || "")) || null,
       set_scores: sets,
       games_for: gamesFor,
       games_against: gamesAgainst,
@@ -374,9 +375,9 @@ export async function createExternalPair(formData: FormData) {
   if (!ctx) return { error: "Sem permissão." };
   const { supabase, user } = ctx;
 
-  const a = String(formData.get("player1") || "").trim();
-  const b = String(formData.get("player2") || "").trim();
-  if (!a || !b) return { error: "Informe o nome das duas jogadoras." };
+  const a = properName(String(formData.get("player1") || ""));
+  const b = properName(String(formData.get("player2") || ""));
+  if (!a || !b) return { error: "Informe o nome dos dois jogadores." };
 
   const [p1, p2] = normalizePair(a, b);
   const { error } = await supabase
@@ -385,6 +386,51 @@ export async function createExternalPair(formData: FormData) {
 
   if (error) {
     if (error.code === "23505") return { error: "Essa dupla já está cadastrada." };
+    return { error: error.message };
+  }
+  refresh();
+  return { ok: true };
+}
+
+export async function updateExternalPair(pairId: string, formData: FormData) {
+  const ctx = await guard();
+  if (!ctx) return { error: "Sem permissão." };
+
+  const a = properName(String(formData.get("player1") || ""));
+  const b = properName(String(formData.get("player2") || ""));
+  if (!a || !b) return { error: "Informe o nome dos dois jogadores." };
+
+  const [p1, p2] = normalizePair(a, b);
+  const { error } = await ctx.supabase
+    .from("external_pairs")
+    .update({ player1: p1, player2: p2 })
+    .eq("id", pairId);
+
+  if (error) {
+    if (error.code === "23505") return { error: "Essa dupla já está cadastrada." };
+    return { error: error.message };
+  }
+  refresh();
+  return { ok: true };
+}
+
+export async function updateExternalPartner(
+  partnerId: string,
+  formData: FormData
+) {
+  const ctx = await guard();
+  if (!ctx) return { error: "Sem permissão." };
+
+  const name = properName(String(formData.get("name") || ""));
+  if (!name) return { error: "Informe o nome do parceiro." };
+
+  const { error } = await ctx.supabase
+    .from("external_partners")
+    .update({ name })
+    .eq("id", partnerId);
+
+  if (error) {
+    if (error.code === "23505") return { error: "Esse parceiro já está na lista." };
     return { error: error.message };
   }
   refresh();

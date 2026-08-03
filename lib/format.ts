@@ -27,6 +27,31 @@ export function displayName(p?: { full_name: string | null } | null): string {
   return p?.full_name?.trim() || "Jogador";
 }
 
+// Conectores de nome brasileiro que ficam em minúscula no meio do nome.
+const NAME_CONNECTORS = new Set([
+  "de", "da", "das", "do", "dos", "e", "di", "del", "van", "von", "y",
+]);
+
+// "andre fiusa" -> "Andre Fiusa" | "MARIA DE SOUZA" -> "Maria de Souza".
+// Usado em todo cadastro de nome para o relatório não tratar o mesmo jogador
+// como duas pessoas por causa de maiúscula/minúscula.
+export function properName(raw: string | null | undefined): string {
+  if (!raw) return "";
+  return raw
+    .trim()
+    .split(/\s+/)
+    .map((word, i) => {
+      const lower = word.toLowerCase();
+      if (i > 0 && NAME_CONNECTORS.has(lower)) return lower;
+      // Respeita nomes compostos por hífen ou apóstrofo: Jean-Pierre, D'Ávila.
+      return lower.replace(
+        /(^|[-'’])([\p{L}])/gu,
+        (_, sep: string, letter: string) => sep + letter.toUpperCase()
+      );
+    })
+    .join(" ");
+}
+
 export const PAYMENT_LABEL: Record<string, string> = {
   paid: "Pago",
   pending: "Pendente",

@@ -12,10 +12,12 @@ import { DeleteExternalTournamentButton } from "@/components/ExternalDeleteButto
 import { shortDate } from "@/lib/format";
 import {
   nextPhase,
+  pairMatchCounts,
   parseSets,
   phaseOrder,
   resultLabel,
   resultStyle,
+  sortPairsByRelevance,
   type ExternalMatch,
   type Phase,
 } from "@/lib/external";
@@ -45,20 +47,31 @@ export default async function ExternalTournamentDetail({
     .single();
   if (!t) notFound();
 
-  const [{ data: rawMatches }, { data: pairs }, { data: profile }] =
-    await Promise.all([
-      supabase
-        .from("external_matches")
-        .select("*")
-        .eq("tournament_id", id)
-        .order("created_at", { ascending: true }),
-      supabase
-        .from("external_pairs")
-        .select("id, player1, player2")
-        .eq("user_id", user.id)
-        .order("player1", { ascending: true }),
-      supabase.from("profiles").select("full_name").eq("id", user.id).single(),
-    ]);
+  const [
+    { data: rawMatches },
+    { data: rawPairs },
+    { data: profile },
+    { data: allMatches },
+  ] = await Promise.all([
+    supabase
+      .from("external_matches")
+      .select("*")
+      .eq("tournament_id", id)
+      .order("created_at", { ascending: true }),
+    supabase
+      .from("external_pairs")
+      .select("id, player1, player2")
+      .eq("user_id", user.id),
+    supabase.from("profiles").select("full_name").eq("id", user.id).single(),
+    // Todos os jogos do jogador (o RLS limita), só para saber quais duplas ele
+    // mais enfrenta e subir essas no seletor.
+    supabase.from("external_matches").select("opponent1, opponent2"),
+  ]);
+
+  const pairs = sortPairsByRelevance(
+    rawPairs ?? [],
+    pairMatchCounts(allMatches ?? [])
+  );
 
   const matches = (rawMatches ?? []).map((m: any) => ({
     ...m,
@@ -131,7 +144,7 @@ export default async function ExternalTournamentDetail({
           <ExternalMatchForm
             tournamentId={t.id}
             defaultPhase={currentPhase}
-            pairs={pairs ?? []}
+            pairs={pairs}
           />
           {playedCurrentPhase && (
             <ExternalOutcome tournamentId={t.id} canAdvance={!!next} />

@@ -116,6 +116,37 @@ export function pairLabel(p: { player1: string; player2: string }): string {
   return `${p.player1} / ${p.player2}`;
 }
 
+// Chave estável de uma dupla, independente da ordem e da caixa das letras.
+export function pairKey(a: string | null, b: string | null): string {
+  const [x, y] = normalizePair(a ?? "", b ?? "");
+  return [x, y].filter(Boolean).join(" / ").toLowerCase();
+}
+
+// Quantas vezes cada dupla já foi enfrentada. Serve para colocar as mais
+// frequentes no topo do seletor — em torneio se reencontra sempre as mesmas.
+export function pairMatchCounts(
+  matches: { opponent1: string | null; opponent2: string | null }[]
+): Map<string, number> {
+  const counts = new Map<string, number>();
+  for (const m of matches) {
+    const key = pairKey(m.opponent1, m.opponent2);
+    if (!key) continue;
+    counts.set(key, (counts.get(key) ?? 0) + 1);
+  }
+  return counts;
+}
+
+// Mais enfrentadas primeiro; empate resolve por ordem alfabética.
+export function sortPairsByRelevance<
+  T extends { player1: string; player2: string },
+>(pairs: T[], counts: Map<string, number>): T[] {
+  return [...pairs].sort((a, b) => {
+    const ca = counts.get(pairKey(a.player1, a.player2)) ?? 0;
+    const cb = counts.get(pairKey(b.player1, b.player2)) ?? 0;
+    return cb - ca || pairLabel(a).localeCompare(pairLabel(b), "pt-BR");
+  });
+}
+
 export type ExternalTournament = {
   id: string;
   name: string;

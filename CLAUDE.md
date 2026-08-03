@@ -42,8 +42,12 @@ dos torneios do jogador, não é tabela — cadastrou uma vez, aparece nas próx
 Mista), gravados juntos numa string do tipo `"B Feminina"` — é por ela que os relatórios
 agrupam. **Parceiros** (`external_partners`) e **duplas adversárias** (`external_pairs`)
 são listas por jogador: o que for digitado entra sozinho na lista e, dali em diante, é só
-escolher. Isso não é conveniência — o relatório de melhor/pior dupla agrupa **pelo nome do
-parceiro**, então "Ana Paula" digitado de três jeitos viraria três pessoas.
+escolher, com as duplas mais enfrentadas no topo. Isso não é conveniência — o relatório de
+melhor/pior dupla agrupa **pelo nome do parceiro**, então "Ana Paula" digitado de três
+jeitos viraria três pessoas. Pela mesma razão, **todo nome passa por `properName()`**
+(`lib/format.ts`) antes de ser gravado: "andre fiusa" vira "Andre Fiusa", com conectores
+(de, da, dos) em minúscula. Parceiros e duplas podem ser editados na tela Parceiros e
+duplas — corrigir ali corrige os relatórios.
 
 **Relatórios:** aproveitamento e saldo geral, melhor/pior dupla (mínimo de 3 jogos),
 desempenho por categoria, freguês e carrasco (mínimo de 2 confrontos), como foi em cada
@@ -69,6 +73,17 @@ não por e-mail, porque este repositório é público.
 A trava está na rota e nas server actions, **não no RLS** — no banco a regra é "cada um vê
 o próprio histórico", que é a definitiva. Para liberar para todos, basta remover a
 checagem; o banco não muda.
+
+### Avisos do grupo
+O dono ou admin do grupo envia avisos por e-mail aos membros ativos em **Membros → Avisar
+o grupo** (`app/actions/notices.ts`). Três modelos prontos — mensalidade, dia de play e
+texto livre — todos editáveis antes de enviar. Sai em cópia oculta, em lotes de 45.
+Depende da `RESEND_API_KEY` na Vercel; sem ela a ação avisa em vez de falhar em silêncio.
+
+### Agenda de torneios
+A tela inicial junta numa lista só os torneios das ligas do jogador e os torneios
+federados dele que ainda não terminaram, ordenados por data. O botão de criar pergunta
+qual dos dois tipos, porque cada um mora num lugar diferente do app.
 
 ## Como rodar local
 ```bash

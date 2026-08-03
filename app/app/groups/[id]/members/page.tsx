@@ -1,5 +1,6 @@
 import { getGroupContext } from "@/lib/data";
 import AddMemberForm from "@/components/AddMemberForm";
+import GroupNoticeForm from "@/components/GroupNoticeForm";
 import InviteBox from "@/components/InviteBox";
 import MemberRow from "@/components/MemberRow";
 
@@ -21,6 +22,7 @@ export default async function MembersPage({
 
   return (
     <div className="space-y-4">
+      {isAdmin && <GroupNoticeForm groupId={id} />}
       {isAdmin && <AddMemberForm groupId={id} />}
       {isAdmin && <InviteBox groupId={id} />}
 

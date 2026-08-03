@@ -2,12 +2,12 @@ import { notFound } from "next/navigation";
 import { requireExternalTester } from "@/lib/admin";
 import { PageHeader } from "@/components/ui";
 import ExternalPairForm, {
-  DeleteExternalPairButton,
+  ExternalPairRow,
 } from "@/components/ExternalPairForm";
 import ExternalPartnerForm, {
-  DeleteExternalPartnerButton,
+  ExternalPartnerRow,
 } from "@/components/ExternalPartnerForm";
-import { pairLabel } from "@/lib/external";
+import { pairKey, pairMatchCounts, sortPairsByRelevance } from "@/lib/external";
 
 export const dynamic = "force-dynamic";
 
@@ -16,18 +16,23 @@ export default async function ParceirosEDuplasPage() {
   if (!ctx) notFound();
   const { supabase, user } = ctx;
 
-  const [{ data: partners }, { data: pairs }] = await Promise.all([
-    supabase
-      .from("external_partners")
-      .select("id, name")
-      .eq("user_id", user.id)
-      .order("name", { ascending: true }),
-    supabase
-      .from("external_pairs")
-      .select("id, player1, player2")
-      .eq("user_id", user.id)
-      .order("player1", { ascending: true }),
-  ]);
+  const [{ data: partners }, { data: rawPairs }, { data: matches }] =
+    await Promise.all([
+      supabase
+        .from("external_partners")
+        .select("id, name")
+        .eq("user_id", user.id)
+        .order("name", { ascending: true }),
+      supabase
+        .from("external_pairs")
+        .select("id, player1, player2")
+        .eq("user_id", user.id),
+      // O RLS já limita aos jogos do próprio jogador.
+      supabase.from("external_matches").select("opponent1, opponent2"),
+    ]);
+
+  const counts = pairMatchCounts(matches ?? []);
+  const pairs = sortPairsByRelevance(rawPairs ?? [], counts);
 
   return (
     <div>
@@ -52,15 +57,7 @@ export default async function ParceirosEDuplasPage() {
         {partners?.length ? (
           <div className="space-y-2">
             {partners.map((p) => (
-              <div key={p.id} className="card flex items-center gap-3 !p-4">
-                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-court-50 text-sm">
-                  🤝
-                </span>
-                <p className="min-w-0 flex-1 truncate text-sm font-semibold text-slate-800">
-                  {p.name}
-                </p>
-                <DeleteExternalPartnerButton partnerId={p.id} />
-              </div>
+              <ExternalPartnerRow key={p.id} partner={p} />
             ))}
           </div>
         ) : (
@@ -74,26 +71,22 @@ export default async function ParceirosEDuplasPage() {
       <section>
         <h2 className="mb-2 font-bold text-slate-800">Duplas adversárias</h2>
         <p className="mb-3 text-sm text-slate-500">
-          Em torneio se joga sempre contra as mesmas duplas. Cadastre e depois é
-          só escolher ao lançar o jogo.
+          Em ordem de quantas vezes você já as enfrentou. Toque em Editar para
+          corrigir um nome — a correção vale para os relatórios também.
         </p>
 
         <div className="mb-3">
           <ExternalPairForm />
         </div>
 
-        {pairs?.length ? (
+        {pairs.length ? (
           <div className="space-y-2">
             {pairs.map((p) => (
-              <div key={p.id} className="card flex items-center gap-3 !p-4">
-                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-ocean-900/5 text-sm">
-                  🎾
-                </span>
-                <p className="min-w-0 flex-1 truncate text-sm font-semibold text-slate-800">
-                  {pairLabel(p)}
-                </p>
-                <DeleteExternalPairButton pairId={p.id} />
-              </div>
+              <ExternalPairRow
+                key={p.id}
+                pair={p}
+                matches={counts.get(pairKey(p.player1, p.player2)) ?? 0}
+              />
             ))}
           </div>
         ) : (
