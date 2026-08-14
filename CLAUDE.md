@@ -74,6 +74,26 @@ A trava está na rota e nas server actions, **não no RLS** — no banco a regra
 o próprio histórico", que é a definitiva. Para liberar para todos, basta remover a
 checagem; o banco não muda.
 
+### Rei da Praia (`lib/rei.ts`)
+Rodízio individual, **pontos corridos — não tem final**. Três regras, nesta ordem de
+prioridade:
+
+1. **Todos jogam o mesmo número de jogos.** Cada partida ocupa 4 vagas, então quando
+   `n % 4` dá 2 ou 3 sobra uma dupla sem adversário e o método do círculo desequilibra
+   (era o bug: com 6 atletas, dois jogavam 4 e quatro jogavam 3). Nesses casos o número de
+   rodadas é esticado até `rodadas × vagas` dividir por `n`.
+2. **Ninguém repete parceiro** enquanto houver parceiro novo disponível.
+3. **A desvantagem de pegar um parceiro frio é distribuída.** Quem volta de um descanso
+   está frio e prejudica quem joga de dupla com ele; a ordem das rodadas é escolhida para
+   que esse peso caia sobre todos por igual (diferença máxima de 1 entre atletas). As
+   parcerias não são alteradas nesse passo — só a ordem das rodadas.
+
+⚠️ **Com 6 atletas as regras 1 e 2 não cabem juntas na versão completa.** "Cada um joga com
+cada um" seriam 15 duplas, e cada partida consome 2 — daria 7,5 partidas. Decisão do
+Henrique (02/08/2026): **manter 4 jogos para todos** (6 rodadas), em que cada atleta joga
+com 4 dos 5 possíveis, sem repetir ninguém. A alternativa descartada era 7 rodadas com
+quatro atletas jogando 5 e dois jogando 4.
+
 ### Avisos do grupo
 O dono ou admin do grupo envia avisos por e-mail aos membros ativos em **Membros → Avisar
 o grupo** (`app/actions/notices.ts`). Três modelos prontos — mensalidade, dia de play e
