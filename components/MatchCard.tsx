@@ -7,8 +7,9 @@ function teamName(team: any): string {
   if (!team) return "—";
   if (team.name) return team.name;
   const a = team.player1?.name?.split(" ")[0] || "?";
-  const b = team.player2?.name?.split(" ")[0] || "?";
-  return `${a} & ${b}`;
+  // No Simples o time tem um atleta só — não existe "& parceiro".
+  const b = team.player2?.name?.split(" ")[0];
+  return b ? `${a} & ${b}` : a;
 }
 
 export default function MatchCard({

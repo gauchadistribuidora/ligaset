@@ -74,6 +74,14 @@ A trava está na rota e nas server actions, **não no RLS** — no banco a regra
 o próprio histórico", que é a definitiva. Para liberar para todos, basta remover a
 checagem; o banco não muda.
 
+### Simples (individual)
+Formato `simples`: um contra um, sem duplas, todos contra todos, ranking por atleta.
+Aproveita a estrutura que já existia — em `teams`, `player2_id` é opcional, então cada
+atleta vira um time de uma pessoa só. A view `group_rankings` já ignora parceiro nulo, e
+a exibição do nome do time cai para um nome só quando não há segundo jogador. Mínimo de
+3 atletas (nos outros formatos são 4). Não tem edição de dupla no jogo, porque não há
+dupla para editar.
+
 ### Rei da Praia (`lib/rei.ts`)
 Rodízio individual, **pontos corridos — não tem final**. Três regras, nesta ordem de
 prioridade:

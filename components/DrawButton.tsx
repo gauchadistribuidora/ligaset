@@ -8,14 +8,20 @@ export default function DrawButton({
   tournamentId,
   hasMatches,
   playerCount,
+  format = "round_robin",
 }: {
   groupId: string;
   tournamentId: string;
   hasMatches: boolean;
   playerCount: number;
+  format?: string;
 }) {
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
+
+  // No Simples não há duplas: bastam 3 atletas.
+  const isSimples = format === "simples";
+  const minPlayers = isSimples ? 3 : 4;
 
   function run() {
     if (
@@ -34,18 +40,20 @@ export default function DrawButton({
     <div>
       <button
         onClick={run}
-        disabled={pending || playerCount < 4}
+        disabled={pending || playerCount < minPlayers}
         className="btn-dark w-full"
       >
         {pending
           ? "Sorteando..."
           : hasMatches
           ? "🎲 Refazer sorteio"
+          : isSimples
+          ? "🎲 Sortear os jogos"
           : "🎲 Sortear duplas e jogos"}
       </button>
-      {playerCount < 4 && (
+      {playerCount < minPlayers && (
         <p className="mt-1 text-center text-xs text-slate-400">
-          Selecione ao menos 4 jogadores.
+          Selecione ao menos {minPlayers} atletas.
         </p>
       )}
       {error && (

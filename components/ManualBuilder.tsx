@@ -10,7 +10,8 @@ import {
 function teamLabel(t: any): string {
   if (t.name) return t.name;
   const a = t.player1?.name?.split(" ")[0] || "?";
-  const b = t.player2?.name?.split(" ")[0] || "?";
+  const b = t.player2?.name?.split(" ")[0];
+  if (!b) return t.player1?.name?.split(" ")[0] || "?";
   return `${a} & ${b}`;
 }
 

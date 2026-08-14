@@ -16,6 +16,7 @@ import { notFound } from "next/navigation";
 
 const FORMAT_LABEL: Record<string, string> = {
   round_robin: "Todos contra todos",
+  simples: "Simples (individual)",
   rei_praia: "Rei da Praia",
   knockout: "Eliminatória direta",
   groups_ko: "Grupos + mata-mata",
@@ -78,6 +79,7 @@ export default async function TournamentDetail({
   const isKnockout = format === "knockout";
   const isGroupsKo = format === "groups_ko";
   const isRei = format === "rei_praia";
+  const isSimples = format === "simples";
   const canEdit = isAdmin && tournament.status !== "finished";
   const maxGames = tournament.game_format + (tournament.tie_break ? 1 : 0);
   const sets = tournament.sets ?? 1;
@@ -149,6 +151,7 @@ export default async function TournamentDetail({
           tournamentId={tid}
           hasMatches={hasMatches}
           playerCount={selectedIds.length}
+          format={format}
         />
       )}
 
@@ -255,7 +258,7 @@ export default async function TournamentDetail({
                               maxGames={maxGames}
                               sets={sets}
                             />
-                            {canEdit && (
+                            {canEdit && !isSimples && (
                               <EditMatchTeams
                                 groupId={id}
                                 tournamentId={tid}
@@ -381,8 +384,9 @@ function computeStandings(matches: any[], teamsById: Record<string, any>) {
     if (!t) return "—";
     if (t.name) return t.name;
     const a = t.player1?.name?.split(" ")[0] || "?";
-    const b = t.player2?.name?.split(" ")[0] || "?";
-    return `${a} & ${b}`;
+    // No Simples o time tem um atleta só.
+    const b = t.player2?.name?.split(" ")[0];
+    return b ? `${a} & ${b}` : a;
   };
 
   for (const m of matches) {

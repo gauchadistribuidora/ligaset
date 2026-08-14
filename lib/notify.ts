@@ -8,8 +8,8 @@ function teamName(t: any): string {
   if (!t) return "—";
   if (t.name) return t.name;
   const a = t.player1?.name?.split(" ")[0] || "?";
-  const b = t.player2?.name?.split(" ")[0] || "?";
-  return `${a} & ${b}`;
+  const b = t.player2?.name?.split(" ")[0];
+  return b ? `${a} & ${b}` : a;
 }
 
 // Campeão do torneio (melhor esforço; retorna null se não der pra determinar).

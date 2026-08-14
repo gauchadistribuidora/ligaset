@@ -5,6 +5,8 @@ import { useState } from "react";
 const HELP: Record<string, string> = {
   round_robin:
     "Sorteio automático monta as duplas fixas; todos jogam contra todos.",
+  simples:
+    "Individual, um contra um — sem duplas. Todos se enfrentam e o ranking é por atleta. Mínimo de 3 atletas.",
   rei_praia:
     "Individual: cada atleta joga com e contra vários parceiros (quem sobra descansa a rodada). O ranking é individual — 1 grupo só, sem classificados.",
   knockout: "Mata-mata: quem perde é eliminado até sobrar o campeão.",
@@ -31,6 +33,7 @@ export default function FormatPicker({
           className="input"
         >
           <option value="round_robin">Todos contra todos (sorteio automático)</option>
+          <option value="simples">Simples (individual, um contra um)</option>
           <option value="rei_praia">Rei/Rainha da Praia (individual, rodízio)</option>
           <option value="knockout">Eliminatória direta (mata-mata)</option>
           <option value="groups_ko">Grupos + mata-mata</option>

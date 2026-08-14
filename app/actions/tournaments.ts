@@ -87,9 +87,6 @@ export async function drawTournament(groupId: string, tournamentId: string) {
     .eq("tournament_id", tournamentId);
 
   const ids = shuffle((players ?? []).map((p) => p.member_id));
-  if (ids.length < 4) {
-    return { error: "Mínimo de 4 jogadores (2 duplas) para sortear." };
-  }
 
   const { data: tournament } = await supabase
     .from("tournaments")
@@ -98,6 +95,46 @@ export async function drawTournament(groupId: string, tournamentId: string) {
     .single();
   const courts = tournament?.courts || 1;
   const format = tournament?.format || "round_robin";
+
+  // Simples: individual, um contra o outro. Cada atleta vira um "time" de uma
+  // pessoa só (o banco já aceita dupla sem o segundo jogador) e todos se
+  // enfrentam.
+  if (format === "simples") {
+    if (ids.length < 3) {
+      return { error: "Mínimo de 3 atletas para o Simples." };
+    }
+    const rows = ids.map((id, i) => ({
+      tournament_id: tournamentId,
+      player1_id: id,
+      player2_id: null,
+      seed: i + 1,
+    }));
+    const { data: inserted, error: teamErr } = await supabase
+      .from("teams")
+      .insert(rows)
+      .select("id, seed");
+    if (teamErr) return { error: teamErr.message };
+
+    const ordered = (inserted ?? []).sort((a, b) => (a.seed ?? 0) - (b.seed ?? 0));
+    const res = await insertRoundRobin(
+      supabase,
+      tournamentId,
+      ordered.map((t) => t.id),
+      courts
+    );
+    if (res.error) return res;
+
+    await supabase
+      .from("tournaments")
+      .update({ status: "ongoing" })
+      .eq("id", tournamentId);
+    revalidatePath(`/app/groups/${groupId}/tournaments/${tournamentId}`);
+    return { ok: true };
+  }
+
+  if (ids.length < 4) {
+    return { error: "Mínimo de 4 jogadores (2 duplas) para sortear." };
+  }
 
   // Rei da Praia: individual, sem duplas fixas — gera o rodízio direto
   if (format === "rei_praia") {
