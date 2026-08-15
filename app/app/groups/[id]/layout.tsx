@@ -11,7 +11,7 @@ export default async function GroupLayout({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const { group, isAdmin } = await getGroupContext(id);
+  const { group, isAdmin, settings } = await getGroupContext(id);
 
   return (
     <div>
@@ -53,7 +53,11 @@ export default async function GroupLayout({
         </div>
       </div>
 
-      <GroupTabs groupId={id} isAdmin={isAdmin} />
+      <GroupTabs
+        groupId={id}
+        isAdmin={isAdmin}
+        showPneu={!!settings?.pneu_enabled}
+      />
       {children}
     </div>
   );

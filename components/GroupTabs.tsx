@@ -6,9 +6,11 @@ import { usePathname } from "next/navigation";
 export default function GroupTabs({
   groupId,
   isAdmin = false,
+  showPneu = false,
 }: {
   groupId: string;
   isAdmin?: boolean;
+  showPneu?: boolean;
 }) {
   const pathname = usePathname() || "";
   const base = `/app/groups/${groupId}`;
@@ -18,6 +20,7 @@ export default function GroupTabs({
     { href: `${base}/ranking`, label: "Ranking" },
     { href: `${base}/members`, label: "Membros" },
     { href: `${base}/payments`, label: "Financeiro" },
+    ...(showPneu ? [{ href: `${base}/pneus`, label: "🛞 Pneu" }] : []),
     ...(isAdmin ? [{ href: `${base}/relatorios`, label: "Relatórios" }] : []),
   ];
 

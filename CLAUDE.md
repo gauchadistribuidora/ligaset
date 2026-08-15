@@ -74,6 +74,19 @@ A trava está na rota e nas server actions, **não no RLS** — no banco a regra
 o próprio histórico", que é a definitiva. Para liberar para todos, basta remover a
 checagem; o banco não muda.
 
+### Ranking do pneu e confirmação de presença
+Os dois são **opcionais por grupo**, ligados em *Configurações* (`group_settings.pneu_enabled`
+e `confirmations_enabled`). Nem toda turma usa — o pneu veio do grupo Cartel.
+
+**Pneu** (`public.pneus`, ações em `app/actions/pneus.ts`): quem perde de zero leva um pneu.
+Cada linha é um lançamento com `qty`, e a quantidade **pode ser negativa** para corrigir sem
+apagar o histórico. A aba mostra o ranking com filtro de período (mês, trimestre, ano, tudo)
+— é isso que dá validade ao ranking. Só admin lança, corrige e apaga; todo membro vê.
+
+**Confirmação** (`public.attendance` + `tournaments.confirmations_open`): o admin abre a lista
+no torneio e o pessoal marca "vou / não vou". Cada um responde por si; o admin responde por
+qualquer um, porque tem gente que avisa por telefone e não abre o app.
+
 ### Simples (individual)
 Formato `simples`: um contra um, sem duplas, todos contra todos, ranking por atleta.
 Aproveita a estrutura que já existia — em `teams`, `player2_id` é opcional, então cada

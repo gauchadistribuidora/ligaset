@@ -49,9 +49,19 @@ export async function updateSettings(groupId: string, formData: FormData) {
   const monthly_fee = Number(formData.get("monthly_fee") || 0);
   const due_day = Number(formData.get("due_day") || 10);
   const pix_key = String(formData.get("pix_key") || "").trim() || null;
+  const pneu_enabled = formData.get("pneu_enabled") === "on";
+  const confirmations_enabled = formData.get("confirmations_enabled") === "on";
   const { error } = await supabase
     .from("group_settings")
-    .update({ default_game_format, tie_break, monthly_fee, due_day, pix_key })
+    .update({
+      default_game_format,
+      tie_break,
+      monthly_fee,
+      due_day,
+      pix_key,
+      pneu_enabled,
+      confirmations_enabled,
+    })
     .eq("group_id", groupId);
   if (error) throw new Error(error.message);
   revalidatePath(`/app/groups/${groupId}`);

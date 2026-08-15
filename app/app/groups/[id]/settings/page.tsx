@@ -103,6 +103,40 @@ export default async function SettingsPage({
           />
           Tie-break ativado por padrão
         </label>
+
+        <label className="flex items-start gap-3 rounded-xl bg-slate-50 p-3">
+          <input
+            name="pneu_enabled"
+            type="checkbox"
+            defaultChecked={settings?.pneu_enabled ?? false}
+            className="mt-0.5 h-5 w-5 shrink-0 rounded accent-court-500"
+          />
+          <span className="text-sm text-slate-600">
+            <strong className="font-semibold text-slate-800">
+              🛞 Ranking do pneu
+            </strong>
+            <br />
+            Quem perde de zero leva um pneu. Cria uma aba com o ranking, que o
+            administrador lança e corrige na mão.
+          </span>
+        </label>
+
+        <label className="flex items-start gap-3 rounded-xl bg-slate-50 p-3">
+          <input
+            name="confirmations_enabled"
+            type="checkbox"
+            defaultChecked={settings?.confirmations_enabled ?? false}
+            className="mt-0.5 h-5 w-5 shrink-0 rounded accent-court-500"
+          />
+          <span className="text-sm text-slate-600">
+            <strong className="font-semibold text-slate-800">
+              ✋ Lista de confirmação
+            </strong>
+            <br />
+            Permite abrir a confirmação de presença nos torneios, para o pessoal
+            marcar no app se vai ou não.
+          </span>
+        </label>
         <div>
           <label className="label">Mensalidade (R$)</label>
           <input

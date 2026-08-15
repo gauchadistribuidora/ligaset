@@ -137,9 +137,9 @@ export default function MatchCard({
                   {multi && (
                     <span className="w-10 text-xs text-slate-400">Set {i + 1}</span>
                   )}
-                  <Stepper value={s[0]} setValue={(v) => setVal(i, 0, v)} max={maxGames} />
+                  <ScoreInput value={s[0]} setValue={(v) => setVal(i, 0, v)} />
                   <span className="text-slate-300">x</span>
-                  <Stepper value={s[1]} setValue={(v) => setVal(i, 1, v)} max={maxGames} />
+                  <ScoreInput value={s[1]} setValue={(v) => setVal(i, 1, v)} />
                 </div>
               ))}
               <button
@@ -202,30 +202,45 @@ function Row({
   );
 }
 
-function Stepper({
+// Campo de placar digitável. O teclado do celular abre em números e o valor
+// vem selecionado, então é só digitar por cima.
+function ScoreInput({
   value,
   setValue,
-  max,
 }: {
   value: number;
   setValue: (n: number) => void;
-  max: number;
 }) {
+  const [text, setText] = useState(String(value));
+
   return (
-    <div className="flex items-center gap-1">
-      <button
-        onClick={() => setValue(Math.max(0, value - 1))}
-        className="h-8 w-8 rounded-lg bg-slate-100 font-bold text-slate-600"
-      >
-        −
-      </button>
-      <span className="w-7 text-center text-lg font-black">{value}</span>
-      <button
-        onClick={() => setValue(Math.min(max, value + 1))}
-        className="h-8 w-8 rounded-lg bg-slate-100 font-bold text-slate-600"
-      >
-        +
-      </button>
-    </div>
+    <input
+      type="number"
+      inputMode="numeric"
+      min={0}
+      max={99}
+      value={text}
+      onFocus={(e) => e.currentTarget.select()}
+      onChange={(e) => {
+        const raw = e.target.value;
+        if (raw === "") {
+          // Deixa apagar para digitar de novo; ao sair do campo volta a zero.
+          setText("");
+          return;
+        }
+        const n = Math.trunc(Number(raw));
+        if (!Number.isFinite(n)) return;
+        const clamped = Math.max(0, Math.min(99, n));
+        setText(String(clamped));
+        setValue(clamped);
+      }}
+      onBlur={() => {
+        if (text === "") {
+          setText("0");
+          setValue(0);
+        }
+      }}
+      className="h-12 w-16 rounded-xl border border-slate-200 bg-white text-center text-xl font-black tabular-nums outline-none transition focus:border-court-400 focus:ring-2 focus:ring-court-100"
+    />
   );
 }

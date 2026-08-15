@@ -1,5 +1,6 @@
 import { getGroupContext } from "@/lib/data";
 import { PageHeader, EmptyState } from "@/components/ui";
+import AttendanceList from "@/components/AttendanceList";
 import ParticipantsPicker from "@/components/ParticipantsPicker";
 import DrawButton from "@/components/DrawButton";
 import MatchCard from "@/components/MatchCard";
@@ -29,7 +30,7 @@ export default async function TournamentDetail({
   params: Promise<{ id: string; tid: string }>;
 }) {
   const { id, tid } = await params;
-  const { supabase, isAdmin } = await getGroupContext(id);
+  const { supabase, isAdmin, settings, user } = await getGroupContext(id);
 
   const { data: tournament } = await supabase
     .from("tournaments")
@@ -63,6 +64,22 @@ export default async function TournamentDetail({
         .eq("tournament_id", tid)
         .order("play_order"),
     ]);
+
+  // Lista de presença — só busca se o grupo usa o recurso.
+  const { data: attendanceRows } = settings?.confirmations_enabled
+    ? await supabase
+        .from("attendance")
+        .select("member_id, status")
+        .eq("tournament_id", tid)
+    : { data: [] as any[] };
+
+  const answers: Record<string, "yes" | "no"> = {};
+  for (const a of attendanceRows ?? []) answers[a.member_id] = a.status;
+
+  const profileIdOf = (m: any) =>
+    Array.isArray(m.profile) ? m.profile[0]?.id : m.profile?.id;
+  const myMemberId =
+    (members ?? []).find((m: any) => profileIdOf(m) === user.id)?.id ?? null;
 
   const selectedIds = (participants ?? []).map((p) => p.member_id);
   const teamsById: Record<string, any> = {};
@@ -132,6 +149,23 @@ export default async function TournamentDetail({
               <ReopenTournamentButton groupId={id} tournamentId={tid} />
             </div>
           )}
+        </div>
+      )}
+
+      {settings?.confirmations_enabled && tournament.status !== "finished" && (
+        <div className="mb-4">
+          <AttendanceList
+            groupId={id}
+            tournamentId={tid}
+            members={(members ?? []).map((m: any) => ({
+              id: m.id,
+              name: m.name,
+            }))}
+            answers={answers}
+            myMemberId={myMemberId}
+            isAdmin={isAdmin}
+            open={!!tournament.confirmations_open}
+          />
         </div>
       )}
 
