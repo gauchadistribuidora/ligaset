@@ -130,7 +130,7 @@ export default async function SettingsPage({
           />
           <span className="text-sm text-slate-600">
             <strong className="font-semibold text-slate-800">
-              🛞 Ranking do pneu
+              Ranking do pneu
             </strong>
             <br />
             Quem perde de zero leva um pneu. Cria uma aba com o ranking, que o

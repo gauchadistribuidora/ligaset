@@ -19,7 +19,7 @@ export default function PneuForm({
   if (!open) {
     return (
       <button onClick={() => setOpen(true)} className="btn-primary w-full">
-        🛞 Lançar pneu
+        Lançar pneu
       </button>
     );
   }

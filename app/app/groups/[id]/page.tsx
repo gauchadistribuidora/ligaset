@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { getGroupContext } from "@/lib/data";
-import { Stat, Avatar } from "@/components/ui";
+import { Stat, Avatar, PneuIcon } from "@/components/ui";
 import { brl } from "@/lib/format";
 
 export default async function GroupOverview({
@@ -9,7 +9,7 @@ export default async function GroupOverview({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const { supabase, isAdmin } = await getGroupContext(id);
+  const { supabase, isAdmin, settings } = await getGroupContext(id);
 
   const [{ count: memberCount }, { count: tournamentCount }, { data: ranking }] =
     await Promise.all([
@@ -102,9 +102,32 @@ export default async function GroupOverview({
         )}
       </section>
 
+      <section
+        className={`grid gap-3 ${
+          settings?.pneu_enabled ? "grid-cols-2" : "grid-cols-1"
+        }`}
+      >
+        <Link
+          href={`/app/groups/${id}/ranking`}
+          className="card flex flex-col items-center text-center"
+        >
+          <div className="text-2xl">🏆</div>
+          <div className="mt-1 text-sm font-bold">Ranking de vitórias</div>
+        </Link>
+        {settings?.pneu_enabled && (
+          <Link
+            href={`/app/groups/${id}/pneus`}
+            className="card flex flex-col items-center text-center"
+          >
+            <PneuIcon className="h-7 w-7 text-slate-700" />
+            <div className="mt-1 text-sm font-bold">Ranking do pneu</div>
+          </Link>
+        )}
+      </section>
+
       <section className="grid grid-cols-2 gap-3">
         <Link href={`/app/groups/${id}/tournaments`} className="card text-center">
-          <div className="text-2xl">🏆</div>
+          <div className="text-2xl">🎾</div>
           <div className="mt-1 text-sm font-bold">Torneios</div>
         </Link>
         <Link href={`/app/groups/${id}/members`} className="card text-center">

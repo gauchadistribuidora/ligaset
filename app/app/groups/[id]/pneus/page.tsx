@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { getGroupContext } from "@/lib/data";
-import { EmptyState } from "@/components/ui";
+import { EmptyState, PneuIcon } from "@/components/ui";
 import PneuForm, { PneuRow } from "@/components/PneuForm";
+import PneuRanking from "@/components/PneuRanking";
 import PneuSeason, { SeasonRow } from "@/components/PneuSeason";
 
 export const dynamic = "force-dynamic";
@@ -40,7 +41,7 @@ export default async function PneusPage({
   if (!settings?.pneu_enabled) {
     return (
       <EmptyState
-        icon="🛞"
+        icon={<PneuIcon className="mx-auto h-10 w-10 text-slate-300" />}
         title="Ranking do pneu desligado"
         desc={
           isAdmin
@@ -76,12 +77,26 @@ export default async function PneusPage({
     member: Array.isArray(r.member) ? r.member[0] ?? null : r.member,
   }));
 
-  // Ranking: soma por atleta, mais pneus primeiro.
-  const porAtleta = new Map<string, { nome: string; total: number }>();
+  // Ranking: soma por atleta, mais pneus primeiro. Guarda os lançamentos de
+  // cada um para abrir as datas ao tocar no pneu.
+  const porAtleta = new Map<
+    string,
+    { memberId: string; nome: string; total: number; lancamentos: any[] }
+  >();
   for (const r of pneus) {
-    const nome = r.member?.name ?? "Atleta";
-    const atual = porAtleta.get(r.member_id) ?? { nome, total: 0 };
+    const atual = porAtleta.get(r.member_id) ?? {
+      memberId: r.member_id,
+      nome: r.member?.name ?? "Atleta",
+      total: 0,
+      lancamentos: [] as any[],
+    };
     atual.total += r.qty;
+    atual.lancamentos.push({
+      id: r.id,
+      qty: r.qty,
+      occurred_on: r.occurred_on,
+      note: r.note,
+    });
     porAtleta.set(r.member_id, atual);
   }
   const ranking = [...porAtleta.values()]
@@ -113,7 +128,7 @@ export default async function PneusPage({
     <div className="space-y-4">
       <div>
         <h1 className="text-xl font-extrabold text-slate-900">
-          🛞 Ranking do pneu
+          <PneuIcon className="inline h-6 w-6 align-[-3px]" /> Ranking do pneu
         </h1>
         <p className="text-sm text-slate-500">
           Perdeu de zero, levou pneu. {totalPneus} no período.
@@ -139,31 +154,10 @@ export default async function PneusPage({
       {isAdmin && <PneuForm groupId={id} members={members ?? []} />}
 
       {ranking.length ? (
-        <div className="card !p-0">
-          {ranking.map((r, i) => (
-            <div
-              key={r.nome + i}
-              className="flex items-center gap-3 border-b border-slate-50 px-4 py-3 last:border-0"
-            >
-              <span className="w-6 shrink-0 text-center text-sm font-black text-slate-400">
-                {i + 1}
-              </span>
-              <p className="min-w-0 flex-1 truncate font-semibold text-slate-800">
-                {r.nome}
-              </p>
-              <span className="shrink-0 text-lg" title={`${r.total} pneu(s)`}>
-                {"🛞".repeat(Math.min(r.total, 5))}
-                {r.total > 5 ? ` ${r.total}` : ""}
-              </span>
-              <span className="w-8 shrink-0 text-right font-black text-slate-900">
-                {r.total}
-              </span>
-            </div>
-          ))}
-        </div>
+        <PneuRanking linhas={ranking} />
       ) : (
         <EmptyState
-          icon="🛞"
+          icon={<PneuIcon className="mx-auto h-10 w-10 text-slate-300" />}
           title="Nenhum pneu no período"
           desc="Ninguém perdeu de zero — ou ainda não foi lançado."
         />

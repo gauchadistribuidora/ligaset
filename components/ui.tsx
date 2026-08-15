@@ -35,13 +35,23 @@ export function Avatar({
   );
 }
 
+// Pneu desenhado à mão: o emoji 🛞 vira roda de carroça em muitos aparelhos.
+export function PneuIcon({ className = "h-5 w-5" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} fill="none" aria-hidden="true">
+      <circle cx="12" cy="12" r="9.2" stroke="currentColor" strokeWidth="3.6" />
+      <circle cx="12" cy="12" r="3.1" fill="currentColor" />
+    </svg>
+  );
+}
+
 export function EmptyState({
   icon,
   title,
   desc,
   action,
 }: {
-  icon: string;
+  icon: React.ReactNode;
   title: string;
   desc?: string;
   action?: React.ReactNode;
