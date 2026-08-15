@@ -142,11 +142,17 @@ válido, entra **sempre como `player`** e é idempotente — abrir o link duas v
 duplica. `EXECUTE` revogado do `anon`. A página pública é `/entrar/[code]`; o admin gera e
 copia o link em Membros.
 
+### ⚠️ Regra de e-mail
+O Ligaset **não manda e-mail próprio**. Os únicos e-mails do app são os de **cadastro e
+recuperação de senha**, e quem envia é o **Supabase Auth** (`signInWithOtp`, reset de
+senha) — não há Resend nem serviço de envio no projeto. Ao criar qualquer recurso de
+comunicação, o canal é o **WhatsApp** (link `wa.me` com o texto pronto) ou a própria tela
+do app. Não reintroduza envio de e-mail sem o Henrique pedir.
+
 ### Avisos do grupo
-O dono ou admin do grupo envia avisos por e-mail aos membros ativos em **Membros → Avisar
-o grupo** (`app/actions/notices.ts`). Três modelos prontos — mensalidade, dia de play e
-texto livre — todos editáveis antes de enviar. Sai em cópia oculta, em lotes de 45.
-Depende da `RESEND_API_KEY` na Vercel; sem ela a ação avisa em vez de falhar em silêncio.
+Em **Membros → Avisar o grupo**, o admin escolhe um modelo (mensalidade, dia de play ou
+texto livre), ajusta o texto e manda pelo **WhatsApp** — ou copia. É tudo no navegador,
+sem back-end.
 
 ### Agenda de torneios
 A tela inicial junta numa lista só os torneios das ligas do jogador e os torneios

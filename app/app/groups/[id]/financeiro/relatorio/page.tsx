@@ -3,7 +3,6 @@ import { financeSummary } from "@/lib/finance";
 import { brl, shortDate } from "@/lib/format";
 import { PageHeader, Stat } from "@/components/ui";
 import PrintButton from "@/components/PrintButton";
-import SendReportButton from "@/components/SendReportButton";
 import { notFound } from "next/navigation";
 
 export default async function FinanceReportPage({
@@ -85,7 +84,6 @@ export default async function FinanceReportPage({
 
       <div className="no-print space-y-2">
         <PrintButton />
-        <SendReportButton groupId={id} />
       </div>
     </div>
   );
