@@ -2,6 +2,7 @@ import { getGroupContext } from "@/lib/data";
 import { PageHeader } from "@/components/ui";
 import ColorPicker from "@/components/ColorPicker";
 import ImageUpload from "@/components/ImageUpload";
+import SaveForm from "@/components/SaveForm";
 import { updateGroup, updateSettings, setGroupLogo } from "@/app/actions/groups";
 import { MODALITY_OPTIONS } from "@/lib/format";
 import { notFound } from "next/navigation";
@@ -22,7 +23,7 @@ export default async function SettingsPage({
     <div className="space-y-6">
       <PageHeader title="Configurações" back={`/app/groups/${id}`} />
 
-      <form action={saveGroup} className="card space-y-4">
+      <SaveForm action={saveGroup} label="Salvar identidade">
         <h3 className="font-bold text-slate-800">Identidade do grupo</h3>
         <div>
           <label className="label">Logo do grupo</label>
@@ -62,10 +63,9 @@ export default async function SettingsPage({
           <label className="label">Cor</label>
           <ColorPicker name="color" defaultValue={group.color} />
         </div>
-        <button className="btn-primary w-full">Salvar identidade</button>
-      </form>
+      </SaveForm>
 
-      <form action={saveSettings} className="card space-y-4">
+      <SaveForm action={saveSettings} label="Salvar regras">
         <h3 className="font-bold text-slate-800">Regras & financeiro</h3>
         <div className="grid grid-cols-2 gap-3">
           <div>
@@ -103,6 +103,23 @@ export default async function SettingsPage({
           />
           Tie-break ativado por padrão
         </label>
+
+        <div>
+          <label className="label">Vagas da quadra (opcional)</label>
+          <input
+            name="capacity"
+            type="number"
+            min={0}
+            defaultValue={settings?.capacity ?? ""}
+            placeholder="Ex: 12"
+            className="input"
+          />
+          <p className="mt-1 text-xs text-slate-400">
+            Quantos jogadores cabem. Quem confirmar depois de lotar entra na
+            lista de espera e sobe sozinho se alguém desistir. Em branco, não há
+            limite.
+          </p>
+        </div>
 
         <label className="flex items-start gap-3 rounded-xl bg-slate-50 p-3">
           <input
@@ -157,8 +174,7 @@ export default async function SettingsPage({
             className="input"
           />
         </div>
-        <button className="btn-primary w-full">Salvar regras</button>
-      </form>
+      </SaveForm>
     </div>
   );
 }

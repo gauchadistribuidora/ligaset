@@ -37,9 +37,23 @@ export async function toggleConfirmations(
     return { error: "Só o administrador do grupo pode abrir a lista." };
   }
 
+  // Ao abrir, garante o código do link público — é por ele que confirma quem
+  // nunca instalou o app.
+  const patch: Record<string, unknown> = { confirmations_open: open };
+  if (open) {
+    const { data: t } = await ctx.supabase
+      .from("tournaments")
+      .select("confirm_code")
+      .eq("id", tournamentId)
+      .single();
+    if (!t?.confirm_code) {
+      patch.confirm_code = crypto.randomUUID().replace(/-/g, "").slice(0, 12);
+    }
+  }
+
   const { error } = await ctx.supabase
     .from("tournaments")
-    .update({ confirmations_open: open })
+    .update(patch)
     .eq("id", tournamentId)
     .eq("group_id", groupId);
   if (error) return { error: error.message };

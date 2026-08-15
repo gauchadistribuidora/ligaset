@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getGroupContext } from "@/lib/data";
 import { EmptyState } from "@/components/ui";
 import PneuForm, { PneuRow } from "@/components/PneuForm";
+import PneuSeason, { SeasonRow } from "@/components/PneuSeason";
 
 export const dynamic = "force-dynamic";
 
@@ -89,6 +90,16 @@ export default async function PneusPage({
 
   const totalPneus = ranking.reduce((s, x) => s + x.total, 0);
 
+  const { data: seasonRows } = await supabase
+    .from("pneu_seasons")
+    .select("id, label, total, closed_on, member:group_members(name)")
+    .eq("group_id", id)
+    .order("closed_on", { ascending: false });
+  const seasons = ((seasonRows ?? []) as any[]).map((s) => ({
+    ...s,
+    member: Array.isArray(s.member) ? s.member[0] ?? null : s.member,
+  }));
+
   const { data: members } = isAdmin
     ? await supabase
         .from("group_members")
@@ -156,6 +167,27 @@ export default async function PneusPage({
           title="Nenhum pneu no período"
           desc="Ninguém perdeu de zero — ou ainda não foi lançado."
         />
+      )}
+
+      {(seasons.length > 0 || isAdmin) && (
+        <section>
+          <h2 className="mb-2 font-bold text-slate-800">
+            🏆 Campeões da temporada
+          </h2>
+          {seasons.length > 0 && (
+            <div className="card mb-2 divide-y divide-slate-50 !p-0">
+              {seasons.map((s) => (
+                <SeasonRow
+                  key={s.id}
+                  groupId={id}
+                  season={s}
+                  canManage={isAdmin}
+                />
+              ))}
+            </div>
+          )}
+          {isAdmin && <PneuSeason groupId={id} />}
+        </section>
       )}
 
       {pneus.length > 0 && (

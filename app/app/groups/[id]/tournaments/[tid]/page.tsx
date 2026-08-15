@@ -69,12 +69,16 @@ export default async function TournamentDetail({
   const { data: attendanceRows } = settings?.confirmations_enabled
     ? await supabase
         .from("attendance")
-        .select("member_id, status")
+        .select("member_id, status, updated_at")
         .eq("tournament_id", tid)
     : { data: [] as any[] };
 
   const answers: Record<string, "yes" | "no"> = {};
-  for (const a of attendanceRows ?? []) answers[a.member_id] = a.status;
+  const answerOrder: Record<string, string> = {};
+  for (const a of attendanceRows ?? []) {
+    answers[a.member_id] = a.status;
+    answerOrder[a.member_id] = a.updated_at ?? "";
+  }
 
   const profileIdOf = (m: any) =>
     Array.isArray(m.profile) ? m.profile[0]?.id : m.profile?.id;
@@ -162,9 +166,12 @@ export default async function TournamentDetail({
               name: m.name,
             }))}
             answers={answers}
+            order={answerOrder}
             myMemberId={myMemberId}
             isAdmin={isAdmin}
             open={!!tournament.confirmations_open}
+            confirmCode={tournament.confirm_code ?? null}
+            capacity={settings?.capacity ?? null}
           />
         </div>
       )}

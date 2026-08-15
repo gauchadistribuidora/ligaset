@@ -83,6 +83,59 @@ export async function updatePneu(
   return { ok: true };
 }
 
+// Fecha a temporada: congela quem levou mais pneu no período e guarda como
+// troféu. O campeão é calculado aqui no servidor, não vem pronto da tela.
+export async function closePneuSeason(groupId: string, formData: FormData) {
+  const ctx = await guard(groupId);
+  if (!ctx) return { error: "Só o administrador do grupo pode fechar a temporada." };
+
+  const label = String(formData.get("label") || "").trim();
+  if (!label) return { error: "Dê um nome à temporada. Ex: 2026." };
+  const from = String(formData.get("from") || "");
+
+  let q = ctx.supabase.from("pneus").select("member_id, qty").eq("group_id", groupId);
+  if (from) q = q.gte("occurred_on", from);
+  const { data: rows, error: readErr } = await q;
+  if (readErr) return { error: readErr.message };
+
+  const soma = new Map<string, number>();
+  for (const r of rows ?? []) {
+    soma.set(r.member_id, (soma.get(r.member_id) ?? 0) + r.qty);
+  }
+  const campeao = [...soma.entries()]
+    .filter(([, total]) => total > 0)
+    .sort((a, b) => b[1] - a[1])[0];
+
+  if (!campeao) return { error: "Nenhum pneu no período — não há campeão." };
+
+  const { error } = await ctx.supabase.from("pneu_seasons").insert({
+    group_id: groupId,
+    label,
+    member_id: campeao[0],
+    total: campeao[1],
+    created_by: ctx.user.id,
+  });
+  if (error) return { error: error.message };
+
+  refresh(groupId);
+  return { ok: true };
+}
+
+export async function deletePneuSeason(groupId: string, seasonId: string) {
+  const ctx = await guard(groupId);
+  if (!ctx) return { error: "Sem permissão." };
+
+  const { error } = await ctx.supabase
+    .from("pneu_seasons")
+    .delete()
+    .eq("id", seasonId)
+    .eq("group_id", groupId);
+  if (error) return { error: error.message };
+
+  refresh(groupId);
+  return { ok: true };
+}
+
 export async function deletePneu(groupId: string, pneuId: string) {
   const ctx = await guard(groupId);
   if (!ctx) return { error: "Só o administrador do grupo pode apagar pneus." };

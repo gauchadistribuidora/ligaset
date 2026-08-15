@@ -121,6 +121,20 @@ Henrique (02/08/2026): **manter 4 jogos para todos** (6 rodadas), em que cada at
 com 4 dos 5 possíveis, sem repetir ninguém. A alternativa descartada era 7 rodadas com
 quatro atletas jogando 5 e dois jogando 4.
 
+### Confirmação sem app, lista de espera e troféu do pneu
+**Sem app:** `tournaments.confirm_code` + as funções públicas `public_attendance_list(code)`
+e `public_attendance_set(code, member, status)` (SECURITY DEFINER, `EXECUTE` para `anon`).
+Elas só respondem com o código certo **e** a lista aberta, devolvem apenas nome e resposta
+— nunca e-mail ou telefone — e recusam atleta de outro grupo. Página pública `/c/[code]`;
+a pessoa acha o próprio nome e responde.
+
+**Lista de espera:** `group_settings.capacity`. Não tem tabela — quem passou da lotação é
+derivado da **ordem de confirmação** (`attendance.updated_at`). Por isso, se alguém
+desiste, o próximo sobe sozinho.
+
+**Troféu:** `pneu_seasons` guarda o campeão de cada temporada. O campeão é apurado **no
+servidor** a partir dos lançamentos do período — não vem pronto da tela.
+
 ### Link de convite do grupo
 `groups.invite_code` + a função `join_group_by_code(code)` (SECURITY DEFINER, porque quem
 ainda não é membro não enxerga o grupo pelo RLS). A função exige login, exige código

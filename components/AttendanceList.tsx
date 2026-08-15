@@ -10,20 +10,28 @@ export default function AttendanceList({
   tournamentId,
   members,
   answers,
+  order,
   myMemberId,
   isAdmin,
   open,
+  confirmCode,
+  capacity,
 }: {
   groupId: string;
   tournamentId: string;
   members: Member[];
   answers: Record<string, "yes" | "no">;
+  // Ordem de chegada da confirmação — define quem fica na lista de espera.
+  order: Record<string, string>;
   myMemberId: string | null;
   isAdmin: boolean;
   open: boolean;
+  confirmCode: string | null;
+  capacity: number | null;
 }) {
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
 
   if (!open) {
     if (!isAdmin) return null;
@@ -53,9 +61,21 @@ export default function AttendanceList({
     );
   }
 
-  const vao = members.filter((m) => answers[m.id] === "yes");
+  const vao = members
+    .filter((m) => answers[m.id] === "yes")
+    .sort((a, b) => (order[a.id] ?? "").localeCompare(order[b.id] ?? ""));
   const naoVao = members.filter((m) => answers[m.id] === "no");
   const semResposta = members.filter((m) => !answers[m.id]);
+
+  // Quem confirmou depois da quadra lotar entra como espera e sobe sozinho se
+  // alguém desistir — a ordem é a da confirmação.
+  const esperaIds = new Set(capacity ? vao.slice(capacity).map((m) => m.id) : []);
+  const dentro = capacity ? vao.slice(0, capacity) : vao;
+
+  const publicLink =
+    confirmCode && typeof window !== "undefined"
+      ? `${window.location.origin}/c/${confirmCode}`
+      : null;
 
   const responder = (memberId: string, status: "yes" | "no" | null) => {
     setError(null);
@@ -73,8 +93,10 @@ export default function AttendanceList({
             ✋ Confirmação de presença
           </p>
           <p className="text-xs text-slate-500">
-            {vao.length} confirmado(s) · {naoVao.length} fora ·{" "}
-            {semResposta.length} sem responder
+            {capacity
+              ? `${dentro.length} de ${capacity} vagas · ${esperaIds.size} na espera`
+              : `${vao.length} confirmado(s)`}{" "}
+            · {naoVao.length} fora · {semResposta.length} sem responder
           </p>
         </div>
         {isAdmin && (
@@ -96,6 +118,29 @@ export default function AttendanceList({
           </button>
         )}
       </div>
+
+      {publicLink && (
+        <div className="rounded-xl bg-ocean-900/5 p-3">
+          <p className="text-xs font-semibold text-slate-600">
+            🔗 Link para quem não tem o app
+          </p>
+          <p className="mt-1 break-all text-xs text-slate-500">{publicLink}</p>
+          <button
+            onClick={async () => {
+              try {
+                await navigator.clipboard.writeText(publicLink);
+                setCopied(true);
+                setTimeout(() => setCopied(false), 2500);
+              } catch {
+                setError("Não consegui copiar. Copie o link na mão.");
+              }
+            }}
+            className="mt-2 text-xs font-bold text-court-600"
+          >
+            {copied ? "Copiado! ✓" : "Copiar link"}
+          </button>
+        </div>
+      )}
 
       {myMemberId && (
         <div className="rounded-xl bg-slate-50 p-3">
@@ -137,15 +182,22 @@ export default function AttendanceList({
               <span className="w-6 shrink-0 text-center">
                 {r === "yes" ? "✅" : r === "no" ? "❌" : "⏳"}
               </span>
-              <p
-                className={`min-w-0 flex-1 truncate text-sm ${
-                  r === "yes"
-                    ? "font-semibold text-slate-800"
-                    : "text-slate-500"
-                }`}
-              >
-                {m.name ?? "Sem nome"}
-              </p>
+              <div className="min-w-0 flex-1">
+                <p
+                  className={`truncate text-sm ${
+                    r === "yes"
+                      ? "font-semibold text-slate-800"
+                      : "text-slate-500"
+                  }`}
+                >
+                  {m.name ?? "Sem nome"}
+                </p>
+                {esperaIds.has(m.id) && (
+                  <p className="text-xs font-semibold text-amber-600">
+                    Lista de espera
+                  </p>
+                )}
+              </div>
               {isAdmin && (
                 <div className="flex shrink-0 gap-1">
                   <button
