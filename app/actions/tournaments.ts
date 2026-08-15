@@ -374,7 +374,79 @@ export async function saveResult(
     { onConflict: "match_id" }
   );
   if (error) throw new Error(error.message);
+
+  await aplicaPneuAutomatico(
+    supabase,
+    groupId,
+    tournamentId,
+    matchId,
+    gamesA,
+    gamesB
+  );
+
   revalidatePath(`/app/groups/${groupId}/tournaments/${tournamentId}`);
+  revalidatePath(`/app/groups/${groupId}/pneus`);
+}
+
+// Perdeu sem fazer um game = pneu. Como o placar pode ser corrigido, o
+// lançamento anterior deste jogo é sempre refeito do zero: assim uma correção
+// tira o pneu de quem não merecia mais.
+async function aplicaPneuAutomatico(
+  supabase: any,
+  groupId: string,
+  tournamentId: string,
+  matchId: string,
+  gamesA: number,
+  gamesB: number
+) {
+  const { data: settings } = await supabase
+    .from("group_settings")
+    .select("pneu_enabled")
+    .eq("group_id", groupId)
+    .maybeSingle();
+  if (!settings?.pneu_enabled) return;
+
+  // Só apaga os automáticos — o que o administrador lançou na mão fica.
+  await supabase.from("pneus").delete().eq("match_id", matchId).eq("auto", true);
+
+  const levouPneu =
+    gamesA === 0 && gamesB > 0 ? "a" : gamesB === 0 && gamesA > 0 ? "b" : null;
+  if (!levouPneu) return;
+
+  const { data: match } = await supabase
+    .from("matches")
+    .select("team_a_id, team_b_id")
+    .eq("id", matchId)
+    .single();
+  const teamId = levouPneu === "a" ? match?.team_a_id : match?.team_b_id;
+  if (!teamId) return;
+
+  const { data: team } = await supabase
+    .from("teams")
+    .select("player1_id, player2_id")
+    .eq("id", teamId)
+    .single();
+  const atletas = [team?.player1_id, team?.player2_id].filter(Boolean);
+  if (!atletas.length) return;
+
+  const { data: tournament } = await supabase
+    .from("tournaments")
+    .select("name, date")
+    .eq("id", tournamentId)
+    .single();
+
+  const placar = `${Math.max(gamesA, gamesB)} a 0`;
+  await supabase.from("pneus").insert(
+    atletas.map((member_id: string) => ({
+      group_id: groupId,
+      member_id,
+      qty: 1,
+      occurred_on: tournament?.date ?? undefined,
+      note: `${placar}${tournament?.name ? ` — ${tournament.name}` : ""}`,
+      match_id: matchId,
+      auto: true,
+    }))
+  );
 }
 
 export async function finishTournament(groupId: string, tournamentId: string) {

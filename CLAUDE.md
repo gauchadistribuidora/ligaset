@@ -83,6 +83,12 @@ Cada linha é um lançamento com `qty`, e a quantidade **pode ser negativa** par
 apagar o histórico. A aba mostra o ranking com filtro de período (mês, trimestre, ano, tudo)
 — é isso que dá validade ao ranking. Só admin lança, corrige e apaga; todo membro vê.
 
+O pneu é lançado **automaticamente** ao salvar um placar em que o perdedor não fez nenhum
+game (`aplicaPneuAutomatico` em `app/actions/tournaments.ts`). Como o placar pode ser
+corrigido, o lançamento automático daquele jogo é sempre refeito do zero — por isso
+`pneus.match_id` e `pneus.auto`, com índice único por (jogo, atleta). Corrigir o placar
+tira o pneu de quem não merecia mais; o que o administrador lançou na mão nunca é apagado.
+
 **Confirmação** (`public.attendance` + `tournaments.confirmations_open`): o admin abre a lista
 no torneio e o pessoal marca "vou / não vou". Cada um responde por si; o admin responde por
 qualquer um, porque tem gente que avisa por telefone e não abre o app.
@@ -114,6 +120,13 @@ cada um" seriam 15 duplas, e cada partida consome 2 — daria 7,5 partidas. Deci
 Henrique (02/08/2026): **manter 4 jogos para todos** (6 rodadas), em que cada atleta joga
 com 4 dos 5 possíveis, sem repetir ninguém. A alternativa descartada era 7 rodadas com
 quatro atletas jogando 5 e dois jogando 4.
+
+### Link de convite do grupo
+`groups.invite_code` + a função `join_group_by_code(code)` (SECURITY DEFINER, porque quem
+ainda não é membro não enxerga o grupo pelo RLS). A função exige login, exige código
+válido, entra **sempre como `player`** e é idempotente — abrir o link duas vezes não
+duplica. `EXECUTE` revogado do `anon`. A página pública é `/entrar/[code]`; o admin gera e
+copia o link em Membros.
 
 ### Avisos do grupo
 O dono ou admin do grupo envia avisos por e-mail aos membros ativos em **Membros → Avisar

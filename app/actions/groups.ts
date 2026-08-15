@@ -67,6 +67,54 @@ export async function updateSettings(groupId: string, formData: FormData) {
   revalidatePath(`/app/groups/${groupId}`);
 }
 
+// ---------- link de convite ----------
+// O administrador copia o link e manda no WhatsApp. Quem abre entra sozinho.
+// Trocar o código invalida os links antigos.
+async function requireGroupAdmin(groupId: string) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return null;
+  const { data: membership } = await supabase
+    .from("group_members")
+    .select("role")
+    .eq("group_id", groupId)
+    .eq("user_id", user.id)
+    .maybeSingle();
+  if (!membership || !["owner", "admin"].includes(membership.role)) return null;
+  return supabase;
+}
+
+function novoCodigo(): string {
+  return crypto.randomUUID().replace(/-/g, "").slice(0, 12);
+}
+
+export async function ensureInviteCode(groupId: string, rotate = false) {
+  const supabase = await requireGroupAdmin(groupId);
+  if (!supabase) {
+    return { error: "Só o administrador do grupo pode gerar o convite." };
+  }
+
+  const { data: group } = await supabase
+    .from("groups")
+    .select("invite_code")
+    .eq("id", groupId)
+    .single();
+
+  if (group?.invite_code && !rotate) return { ok: true, code: group.invite_code };
+
+  const code = novoCodigo();
+  const { error } = await supabase
+    .from("groups")
+    .update({ invite_code: code })
+    .eq("id", groupId);
+  if (error) return { error: error.message };
+
+  revalidatePath(`/app/groups/${groupId}/members`);
+  return { ok: true, code };
+}
+
 export async function addPlayer(groupId: string, formData: FormData) {
   const supabase = await createClient();
   const name = String(formData.get("name") || "").trim();

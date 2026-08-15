@@ -61,7 +61,9 @@ export default async function PneusPage({
 
   let query = supabase
     .from("pneus")
-    .select("id, qty, occurred_on, note, member_id, member:group_members(name)")
+    .select(
+      "id, qty, occurred_on, note, auto, member_id, member:group_members(name)"
+    )
     .eq("group_id", id)
     .order("occurred_on", { ascending: false })
     .order("created_at", { ascending: false });

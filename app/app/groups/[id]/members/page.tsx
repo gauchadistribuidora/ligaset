@@ -2,6 +2,7 @@ import { getGroupContext } from "@/lib/data";
 import AddMemberForm from "@/components/AddMemberForm";
 import GroupNoticeForm from "@/components/GroupNoticeForm";
 import InviteBox from "@/components/InviteBox";
+import InviteLinkBox from "@/components/InviteLinkBox";
 import MemberRow from "@/components/MemberRow";
 
 export default async function MembersPage({
@@ -10,7 +11,7 @@ export default async function MembersPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const { supabase, isAdmin } = await getGroupContext(id);
+  const { supabase, isAdmin, group } = await getGroupContext(id);
 
   const { data: members } = await supabase
     .from("group_members")
@@ -23,6 +24,9 @@ export default async function MembersPage({
   return (
     <div className="space-y-4">
       {isAdmin && <GroupNoticeForm groupId={id} />}
+      {isAdmin && (
+        <InviteLinkBox groupId={id} initialCode={group.invite_code ?? null} />
+      )}
       {isAdmin && <AddMemberForm groupId={id} />}
       {isAdmin && <InviteBox groupId={id} />}
 

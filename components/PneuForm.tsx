@@ -114,6 +114,7 @@ export function PneuRow({
     qty: number;
     occurred_on: string;
     note: string | null;
+    auto?: boolean;
     member?: { name: string | null } | null;
   };
   canManage: boolean;
@@ -193,6 +194,11 @@ export function PneuRow({
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-semibold text-slate-800">
           {pneu.member?.name ?? "Atleta"}
+          {pneu.auto && (
+            <span className="ml-2 rounded-full bg-ocean-900/5 px-2 py-0.5 text-[10px] font-bold uppercase text-ocean-900">
+              automático
+            </span>
+          )}
         </p>
         <p className="truncate text-xs text-slate-400">
           {new Date(pneu.occurred_on + "T00:00:00").toLocaleDateString("pt-BR")}
