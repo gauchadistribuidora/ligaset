@@ -61,11 +61,15 @@ export default function AttendanceList({
     );
   }
 
-  const vao = members
+  const emOrdem = [...members].sort((a, b) =>
+    (a.name ?? "").localeCompare(b.name ?? "", "pt-BR")
+  );
+
+  const vao = emOrdem
     .filter((m) => answers[m.id] === "yes")
     .sort((a, b) => (order[a.id] ?? "").localeCompare(order[b.id] ?? ""));
-  const naoVao = members.filter((m) => answers[m.id] === "no");
-  const semResposta = members.filter((m) => !answers[m.id]);
+  const naoVao = emOrdem.filter((m) => answers[m.id] === "no");
+  const semResposta = emOrdem.filter((m) => !answers[m.id]);
 
   // Quem confirmou depois da quadra lotar entra como espera e sobe sozinho se
   // alguém desistir — a ordem é a da confirmação.
@@ -175,7 +179,7 @@ export default function AttendanceList({
       )}
 
       <div className="divide-y divide-slate-50">
-        {members.map((m) => {
+        {emOrdem.map((m) => {
           const r = answers[m.id];
           return (
             <div key={m.id} className="flex items-center gap-3 py-2">

@@ -20,7 +20,11 @@ export default function PublicAttendance({
   membros: Membro[];
   capacity: number | null;
 }) {
-  const [lista, setLista] = useState(membros);
+  const [lista, setLista] = useState(() =>
+    [...membros].sort((a, b) =>
+      (a.name ?? "").localeCompare(b.name ?? "", "pt-BR")
+    )
+  );
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [busca, setBusca] = useState("");

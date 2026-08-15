@@ -19,7 +19,12 @@ export default async function MembersPage({
       "id, role, status, name, phone, email, user_id, avatar_url, profile:profiles(id, full_name, email, avatar_url)"
     )
     .eq("group_id", id)
-    .order("role", { ascending: true });
+    .order("name", { ascending: true });
+
+  // Ordem alfabética de verdade: localeCompare respeita acento.
+  const ordenados = [...(members ?? [])].sort((a: any, b: any) =>
+    (a.name ?? "").localeCompare(b.name ?? "", "pt-BR")
+  );
 
   return (
     <div className="space-y-4">
@@ -31,7 +36,7 @@ export default async function MembersPage({
       {isAdmin && <InviteBox groupId={id} />}
 
       <div className="card divide-y divide-slate-100 !p-0">
-        {(members ?? []).map((m: any) => (
+        {ordenados.map((m: any) => (
           <MemberRow
             key={m.id}
             groupId={id}
@@ -43,7 +48,7 @@ export default async function MembersPage({
       </div>
 
       <p className="px-1 text-xs text-slate-400">
-        {(members ?? []).length} jogador(es). Basta nome e telefone para
+        {ordenados.length} jogador(es). Basta nome e telefone para
         cadastrar. Adicione um e-mail e use “Convidar” quando quiser dar acesso
         ao app.
       </p>

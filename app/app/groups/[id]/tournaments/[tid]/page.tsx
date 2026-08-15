@@ -46,7 +46,8 @@ export default async function TournamentDetail({
         .from("group_members")
         .select("id, name, profile:profiles(id, full_name, avatar_url)")
         .eq("group_id", id)
-        .eq("status", "active"),
+        .eq("status", "active")
+        .order("name", { ascending: true }),
       supabase
         .from("tournament_players")
         .select("member_id")

@@ -55,11 +55,15 @@ export default function PneuForm({
             <option value="" disabled>
               Escolha...
             </option>
-            {members.map((m) => (
-              <option key={m.id} value={m.id}>
-                {m.name ?? "Sem nome"}
-              </option>
-            ))}
+            {[...members]
+              .sort((a, b) =>
+                (a.name ?? "").localeCompare(b.name ?? "", "pt-BR")
+              )
+              .map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.name ?? "Sem nome"}
+                </option>
+              ))}
           </select>
         </div>
 
