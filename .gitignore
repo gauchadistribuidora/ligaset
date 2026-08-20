@@ -9,3 +9,7 @@ npm-debug.log*
 .vercel
 next-env.d.ts
 .env
+
+# Configuração local do Claude Code (permissões da máquina).
+# O repositório é público — isso não precisa ir junto.
+.claude/
