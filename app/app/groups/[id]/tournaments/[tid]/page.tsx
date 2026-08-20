@@ -7,6 +7,7 @@ import MatchCard from "@/components/MatchCard";
 import MatchDeleteButton from "@/components/MatchDeleteButton";
 import FinishButton from "@/components/FinishButton";
 import ManualBuilder from "@/components/ManualBuilder";
+import TreinoBuilder from "@/components/TreinoBuilder";
 import DeleteTournamentButton from "@/components/DeleteTournamentButton";
 import ReopenTournamentButton from "@/components/ReopenTournamentButton";
 import Bracket from "@/components/Bracket";
@@ -18,6 +19,7 @@ import { notFound } from "next/navigation";
 const FORMAT_LABEL: Record<string, string> = {
   round_robin: "Todos contra todos",
   simples: "Simples (individual)",
+  treino: "Jogo/Treino",
   rei_praia: "Rei da Praia",
   knockout: "Eliminatória direta",
   groups_ko: "Grupos + mata-mata",
@@ -116,6 +118,7 @@ export default async function TournamentDetail({
   const isGroupsKo = format === "groups_ko";
   const isRei = format === "rei_praia";
   const isSimples = format === "simples";
+  const isTreino = format === "treino";
   const souParticipante = !!myMemberId && selectedIds.includes(myMemberId);
   const podeLancarPlacar =
     isAdmin || (!!settings?.players_can_score && souParticipante);
@@ -197,7 +200,7 @@ export default async function TournamentDetail({
         </div>
       )}
 
-      {canEdit && !isManual && (
+      {canEdit && !isManual && !isTreino && (
         <ParticipantsPicker
           groupId={id}
           tournamentId={tid}
@@ -207,13 +210,22 @@ export default async function TournamentDetail({
         />
       )}
 
-      {canEdit && !isManual && (
+      {canEdit && !isManual && !isTreino && (
         <DrawButton
           groupId={id}
           tournamentId={tid}
           hasMatches={hasMatches}
           playerCount={selectedIds.length}
           format={format}
+        />
+      )}
+
+      {canEdit && isTreino && (
+        <TreinoBuilder
+          groupId={id}
+          tournamentId={tid}
+          members={(members ?? []).map((m: any) => ({ id: m.id, name: m.name }))}
+          teams={teams ?? []}
         />
       )}
 
@@ -290,7 +302,7 @@ export default async function TournamentDetail({
           )}
 
           {/* Rei da Praia (individual, rodízio) */}
-          {isRei && (
+          {(isRei || isTreino) && (
             <>
               <IndividualStandingsCard
                 standings={computeIndividualStandings(groupMatches, teamsById)}
@@ -304,7 +316,9 @@ export default async function TournamentDetail({
                 .map((rn) => (
                   <section key={rn as number}>
                     <h3 className="mb-2 font-bold text-slate-800">
-                      🎾 Rodada {rn as number}
+                      {/* No treino não há rodada: os jogos vão sendo lançados
+                          conforme terminam. */}
+                      🎾 {isTreino ? "Jogos lançados" : `Rodada ${rn as number}`}
                     </h3>
                     <div className="space-y-3">
                       {groupMatches
@@ -342,7 +356,7 @@ export default async function TournamentDetail({
           )}
 
           {/* Todos contra todos / manual */}
-          {!isKnockout && !isGroupsKo && !isRei && (
+          {!isKnockout && !isGroupsKo && !isRei && !isTreino && (
             <>
               {(() => {
                 const standings = computeStandings(groupMatches, teamsById);

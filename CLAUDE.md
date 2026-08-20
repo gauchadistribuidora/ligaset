@@ -92,6 +92,14 @@ tira o pneu de quem não merecia mais; o que o administrador lançou na mão nun
 no torneio e o pessoal marca "vou / não vou". Cada um responde por si; o admin responde por
 qualquer um, porque tem gente que avisa por telefone e não abre o app.
 
+### Jogo/Treino (`treino`)
+Dia de jogos em várias quadras, com duplas esperando fora. **Não tem sorteio** — quem
+entra é quem estava esperando, então o jogo só pode ser registrado depois de acontecer.
+O admin cadastra as duplas do dia uma vez e depois usa um formulário só: dupla A × dupla
+B + placar, em um passo (`registrarJogoTreino`). A classificação é **por atleta** e se
+atualiza a cada lançamento; o pneu automático vale igual. Reaproveita `createTeamManual`
+e o `phase = 'treino'` nos jogos.
+
 ### Simples (individual)
 Formato `simples`: um contra um, sem duplas, todos contra todos, ranking por atleta.
 Aproveita a estrutura que já existia — em `teams`, `player2_id` é opcional, então cada

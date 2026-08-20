@@ -451,6 +451,83 @@ async function aplicaPneuAutomatico(
   );
 }
 
+// ---------- Jogo/Treino ----------
+// Dia de jogos com várias quadras: não dá para sortear antes, porque quem
+// entra é quem estava esperando. Aqui o jogo é registrado depois de acontecer,
+// já com o placar, em um passo só.
+export async function registrarJogoTreino(
+  groupId: string,
+  tournamentId: string,
+  teamAId: string,
+  teamBId: string,
+  gamesA: number,
+  gamesB: number
+) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!teamAId || !teamBId || teamAId === teamBId) {
+    return { error: "Escolha duas duplas diferentes." };
+  }
+  if (gamesA === gamesB) {
+    return { error: "O placar não pode terminar empatado." };
+  }
+
+  const { data: existentes } = await supabase
+    .from("matches")
+    .select("id")
+    .eq("tournament_id", tournamentId);
+
+  const { data: match, error: mErr } = await supabase
+    .from("matches")
+    .insert({
+      tournament_id: tournamentId,
+      phase: "treino",
+      team_a_id: teamAId,
+      team_b_id: teamBId,
+      play_order: existentes?.length ?? 0,
+      status: "scheduled",
+    })
+    .select("id")
+    .single();
+  if (mErr) return { error: mErr.message };
+
+  const winner = gamesA > gamesB ? teamAId : teamBId;
+  const { error: rErr } = await supabase.from("match_results").upsert(
+    {
+      match_id: match.id,
+      games_a: gamesA,
+      games_b: gamesB,
+      winner_team_id: winner,
+      reported_by: user?.id,
+    },
+    { onConflict: "match_id" }
+  );
+  if (rErr) return { error: rErr.message };
+
+  // Perdeu de zero leva pneu, igual aos outros formatos.
+  await aplicaPneuAutomatico(
+    supabase,
+    groupId,
+    tournamentId,
+    match.id,
+    gamesA,
+    gamesB
+  );
+
+  await supabase
+    .from("tournaments")
+    .update({ status: "ongoing" })
+    .eq("id", tournamentId)
+    .eq("status", "draft");
+
+  revalidatePath(`/app/groups/${groupId}/tournaments/${tournamentId}`);
+  revalidatePath(`/app/groups/${groupId}/pneus`);
+  return { ok: true };
+}
+
 export async function finishTournament(groupId: string, tournamentId: string) {
   const supabase = await createClient();
   await supabase
