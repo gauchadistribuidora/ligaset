@@ -11,7 +11,6 @@ Site em produção: **https://ligaset.com.br**
 - **Next.js 14** (App Router + Server Actions) + React 18 + TypeScript
 - **Tailwind CSS** — tema esportivo, mobile-first
 - **Supabase** — Postgres, Auth (Google + magic link + senha), Storage, Row Level Security
-- **Resend** — envio de e-mails (relatórios, convites, comunicados)
 - **SheetJS (xlsx)** — exportação de relatórios
 - **Deploy:** Vercel (time `Gaúcha Distribuidora`, projeto `ligaset`)
 
@@ -21,10 +20,10 @@ Site em produção: **https://ligaset.com.br**
 | `app/` | Páginas e rotas. `app/app/**` é a área logada; a raiz tem landing, login, termos e privacidade |
 | `app/actions/` | Server Actions — toda escrita no banco passa por aqui (grupos, torneios, pagamentos, financeiro, conta, admin) |
 | `components/` | Componentes de UI (MatchCard, Bracket, formulários, etc.) |
-| `lib/` | Regras de negócio: `draw.ts` (sorteio), `bracket.ts` (chaveamento), `finance.ts` (financeiro), `reports.ts` (relatórios), `email.ts`/`notify.ts` (envios), `data.ts` (consultas), `types.ts` |
+| `lib/` | Regras de negócio: `draw.ts` (sorteio), `bracket.ts` (chaveamento), `finance.ts` (financeiro), `reports.ts` (relatórios), `rei.ts` (Rei da Praia), `data.ts` (consultas), `types.ts` |
 | `lib/supabase/` | Clientes do Supabase: `client.ts` (browser), `server.ts` (server), `middleware.ts` (sessão), `admin.ts` (service role — **nunca usar em código de cliente**) |
 | `app/app/externos/` | **Torneios Federados** — histórico pessoal dos torneios de federação (CBT, FGT, FGBT). Regras em `lib/external.ts`, ações em `app/actions/external.ts` |
-| `supabase/migrations/` | Migrations versionadas, `0001` a `0017` |
+| `supabase/migrations/` | Migrations versionadas, `0001` a `0026` |
 
 ### Torneios Federados (módulo em teste)
 Cada jogador registra os torneios que disputa fora da plataforma: torneio, data,
