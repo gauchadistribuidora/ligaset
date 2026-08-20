@@ -29,10 +29,39 @@ export const REPORTS: { key: string; label: string; desc: string; icon: string }
   { key: "resultados", label: "Resultado de jogos", desc: "Placares dos jogos finalizados.", icon: "🎾" },
   { key: "campeoes", label: "Campeões por torneio", desc: "Quem venceu cada torneio.", icon: "👑" },
   { key: "presenca", label: "Presença dos atletas", desc: "Torneios e jogos por atleta.", icon: "📆" },
-  { key: "financeiro-mensal", label: "Resumo financeiro mensal", desc: "Arrecadado x pendente por mês.", icon: "📊" },
+  { key: "financeiro-mensal", label: "Resumo financeiro mensal", desc: "Saldo inicial, entradas, saídas e saldo final.", icon: "📊" },
+  { key: "despesas", label: "Despesas", desc: "Tudo que saiu do caixa, com quem lançou.", icon: "💸" },
   { key: "melhores-duplas", label: "Melhores duplas", desc: "Duplas com mais vitórias juntas.", icon: "🤝" },
   { key: "resumo-torneio", label: "Resumo do torneio", desc: "Placar, ranking e destaques de um torneio.", icon: "📄" },
 ];
+
+// Períodos padrão dos relatórios. "tudo" não corta nada.
+export const PERIODOS: { key: string; label: string }[] = [
+  { key: "mes", label: "Este mês" },
+  { key: "trimestre", label: "Trimestre" },
+  { key: "ano", label: "Este ano" },
+  { key: "tudo", label: "Tudo" },
+];
+
+export function inicioDoPeriodo(p?: string): string | null {
+  const hoje = new Date();
+  const iso = (d: Date) => d.toISOString().slice(0, 10);
+  if (p === "mes") return iso(new Date(hoje.getFullYear(), hoje.getMonth(), 1));
+  if (p === "trimestre")
+    return iso(new Date(hoje.getFullYear(), hoje.getMonth() - 2, 1));
+  if (p === "ano") return iso(new Date(hoje.getFullYear(), 0, 1));
+  return null; // tudo
+}
+
+// Quais relatórios fazem sentido filtrar por período.
+export const REPORTS_COM_PERIODO = new Set([
+  "mensalidades",
+  "atrasadas",
+  "despesas",
+  "financeiro-mensal",
+  "torneios",
+  "campeoes",
+]);
 
 const firstName = (n?: string | null) => (n || "?").trim().split(/\s+/)[0];
 const todayISO = () => new Date().toISOString().slice(0, 10);
@@ -150,7 +179,7 @@ export async function buildReport(
   supabase: any,
   groupId: string,
   key: string,
-  opts: { tournamentId?: string } = {}
+  opts: { tournamentId?: string; desde?: string | null } = {}
 ): Promise<ReportDoc | null> {
   const nameMap = await nameMapOf(supabase, groupId);
 
@@ -162,6 +191,7 @@ export async function buildReport(
       .eq("group_id", groupId)
       .order("reference_month", { ascending: false });
     let list = pays ?? [];
+    if (opts.desde) list = list.filter((p: any) => p.reference_month >= opts.desde!);
     const columns: ReportColumn[] = [
       { key: "atleta", label: "Atleta" },
       { key: "ref", label: "Referência" },
@@ -197,35 +227,105 @@ export async function buildReport(
   }
 
   // ---------- Resumo financeiro mensal ----------
+  // Caixa mês a mês: o que entrou, o que saiu e como o saldo terminou.
+  // A entrada conta pela data do pagamento; a saída, pela data da despesa.
   if (key === "financeiro-mensal") {
-    const { data: pays } = await supabase
-      .from("payments")
-      .select("amount, reference_month, status")
-      .eq("group_id", groupId);
-    const byMonth: Record<string, { total: number; paid: number }> = {};
+    const [{ data: pays }, { data: exps }] = await Promise.all([
+      supabase
+        .from("payments")
+        .select("amount, reference_month, status, paid_at")
+        .eq("group_id", groupId),
+      supabase
+        .from("expenses")
+        .select("amount, expense_date")
+        .eq("group_id", groupId),
+    ]);
+
+    const mesDe = (d: any) => (d ? String(d).slice(0, 7) : "");
+    const mov: Record<string, { entrada: number; saida: number }> = {};
+    const toca = (m: string) => (mov[m] ??= { entrada: 0, saida: 0 });
+
     for (const p of pays ?? []) {
-      const k = p.reference_month;
-      byMonth[k] ??= { total: 0, paid: 0 };
-      byMonth[k].total += Number(p.amount || 0);
-      if (p.status === "paid") byMonth[k].paid += Number(p.amount || 0);
+      if (p.status !== "paid") continue;
+      const m = mesDe(p.paid_at ?? p.reference_month);
+      if (m) toca(m).entrada += Number(p.amount || 0);
     }
-    const rows = Object.entries(byMonth)
-      .sort((a, b) => (a[0] < b[0] ? 1 : -1))
-      .map(([m, v]) => ({
-        mes: monthLabel(m),
-        arrecadado: brl(v.paid),
-        pendente: brl(v.total - v.paid),
-        adimplencia: (v.total ? Math.round((100 * v.paid) / v.total) : 0) + "%",
-      }));
+    for (const e of exps ?? []) {
+      const m = mesDe(e.expense_date);
+      if (m) toca(m).saida += Number(e.amount || 0);
+    }
+
+    const meses = Object.keys(mov).sort();
+    let acumulado = 0;
+    const todas = meses.map((m) => {
+      const inicial = acumulado;
+      const final = inicial + mov[m].entrada - mov[m].saida;
+      acumulado = final;
+      return {
+        mes: m,
+        inicial: brl(inicial),
+        entradas: brl(mov[m].entrada),
+        saidas: brl(mov[m].saida),
+        final: brl(final),
+      };
+    });
+
+    const visiveis = (opts.desde ? todas.filter((r) => r.mes >= opts.desde!.slice(0, 7)) : todas)
+      .reverse()
+      .map((r) => ({ ...r, mes: monthLabel(r.mes + "-01") }));
+
     return {
       title: "Resumo financeiro mensal",
+      subtitle: `${visiveis.length} mês(es)`,
       sections: [
         {
           columns: [
             { key: "mes", label: "Mês" },
-            { key: "arrecadado", label: "Arrecadado", align: "right" },
-            { key: "pendente", label: "Pendente", align: "right" },
-            { key: "adimplencia", label: "Adimplência", align: "center" },
+            { key: "inicial", label: "Saldo inicial", align: "right" },
+            { key: "entradas", label: "Entradas", align: "right" },
+            { key: "saidas", label: "Saídas", align: "right" },
+            { key: "final", label: "Saldo final", align: "right" },
+          ],
+          rows: visiveis,
+        },
+      ],
+    };
+  }
+
+  // ---------- Despesas ----------
+  if (key === "despesas") {
+    let q = supabase
+      .from("expenses")
+      .select("*, lancador:profiles!expenses_created_by_fkey(full_name)")
+      .eq("group_id", groupId)
+      .order("expense_date", { ascending: false });
+    if (opts.desde) q = q.gte("expense_date", opts.desde);
+    const { data } = await q;
+    const list = (data ?? []) as any[];
+    const total = list.reduce((sum, e) => sum + Number(e.amount || 0), 0);
+
+    const rows = list.map((e) => {
+      const quem = Array.isArray(e.lancador) ? e.lancador[0] : e.lancador;
+      return {
+        data: shortDate(e.expense_date),
+        descricao: e.description,
+        categoria: e.category || "—",
+        valor: brl(Number(e.amount || 0)),
+        lancado: quem?.full_name || "—",
+      };
+    });
+
+    return {
+      title: "Despesas",
+      subtitle: `${rows.length} lançamento(s) • total ${brl(total)}`,
+      sections: [
+        {
+          columns: [
+            { key: "data", label: "Data", align: "center" },
+            { key: "descricao", label: "Descrição" },
+            { key: "categoria", label: "Categoria" },
+            { key: "valor", label: "Valor", align: "right" },
+            { key: "lancado", label: "Lançado por" },
           ],
           rows,
         },
@@ -274,13 +374,12 @@ export async function buildReport(
 
   // ---------- Torneios ----------
   if (key === "torneios") {
-    const tours = await tournamentsOf(supabase, groupId);
+    let tours = await tournamentsOf(supabase, groupId);
+    if (opts.desde) tours = tours.filter((t: any) => (t.date ?? "") >= opts.desde!);
     const rows = tours.map((t: any) => ({
-      nome: t.name,
       data: shortDate(t.date),
+      nome: t.name,
       formato: FORMAT_LABEL[t.format] || "—",
-      categoria: t.category || "—",
-      local: t.location || "—",
       status: TOUR_STATUS[t.status] || t.status,
     }));
     return {
@@ -289,11 +388,9 @@ export async function buildReport(
       sections: [
         {
           columns: [
-            { key: "nome", label: "Nome" },
             { key: "data", label: "Data", align: "center" },
+            { key: "nome", label: "Torneio" },
             { key: "formato", label: "Formato" },
-            { key: "categoria", label: "Categoria" },
-            { key: "local", label: "Local" },
             { key: "status", label: "Status", align: "center" },
           ],
           rows,
@@ -304,7 +401,13 @@ export async function buildReport(
 
   // ---------- Tabela de jogos / Resultados ----------
   if (key === "jogos" || key === "resultados") {
-    const tours = await tournamentsOf(supabase, groupId);
+    // Um torneio por vez: a tabela de todos juntos ficava confusa e o PDF saía
+    // com jogo de torneio que ninguém pediu.
+    if (!opts.tournamentId) return null;
+    const tours = (await tournamentsOf(supabase, groupId)).filter(
+      (t: any) => t.id === opts.tournamentId
+    );
+    if (!tours.length) return null;
     const tmap: Record<string, any> = {};
     for (const t of tours) tmap[t.id] = t;
     const tids = tours.map((t: any) => t.id);
@@ -320,7 +423,6 @@ export async function buildReport(
     }
     if (key === "jogos") {
       const rows = matches.map((m) => ({
-        torneio: tmap[m.tournament_id]?.name || "—",
         fase: faseLabel(m),
         duplaA: teamLabel(teamsMap[m.team_a_id], nameMap),
         duplaB: teamLabel(teamsMap[m.team_b_id], nameMap),
@@ -328,12 +430,11 @@ export async function buildReport(
         status: m.status === "finished" ? "Finalizado" : "Agendado",
       }));
       return {
-        title: "Tabela de jogos",
-        subtitle: `${rows.length} jogo(s)`,
+        title: `Tabela de jogos — ${tours[0].name}`,
+        subtitle: `${shortDate(tours[0].date)} • ${rows.length} jogo(s)`,
         sections: [
           {
             columns: [
-              { key: "torneio", label: "Torneio" },
               { key: "fase", label: "Fase" },
               { key: "duplaA", label: "Dupla A" },
               { key: "duplaB", label: "Dupla B" },
@@ -349,7 +450,7 @@ export async function buildReport(
     const rows = done.map((m) => {
       const w = m.result.winner_team_id;
       return {
-        torneio: tmap[m.tournament_id]?.name || "—",
+        fase: faseLabel(m),
         duplaA: teamLabel(teamsMap[m.team_a_id], nameMap),
         placar: placar(m.result),
         duplaB: teamLabel(teamsMap[m.team_b_id], nameMap),
@@ -357,12 +458,12 @@ export async function buildReport(
       };
     });
     return {
-      title: "Resultado de jogos",
-      subtitle: `${rows.length} resultado(s)`,
+      title: `Resultado dos jogos — ${tours[0].name}`,
+      subtitle: `${shortDate(tours[0].date)} • ${rows.length} resultado(s)`,
       sections: [
         {
           columns: [
-            { key: "torneio", label: "Torneio" },
+            { key: "fase", label: "Fase" },
             { key: "duplaA", label: "Dupla A" },
             { key: "placar", label: "Placar", align: "center" },
             { key: "duplaB", label: "Dupla B" },
@@ -376,7 +477,10 @@ export async function buildReport(
 
   // ---------- Campeões por torneio ----------
   if (key === "campeoes") {
-    const tours = (await tournamentsOf(supabase, groupId)).filter((t: any) => t.status === "finished");
+    let tours = (await tournamentsOf(supabase, groupId)).filter(
+      (t: any) => t.status === "finished"
+    );
+    if (opts.desde) tours = tours.filter((t: any) => (t.date ?? "") >= opts.desde!);
     const tids = tours.map((t: any) => t.id);
     const teamsMap = await teamsMapOf(supabase, tids);
     let matches: any[] = [];

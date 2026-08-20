@@ -33,32 +33,31 @@ export default function ReportView({
       .replace(/(^-|-$)/g, "");
   }
 
-  function downloadCSV() {
-    const esc = (v: any) => {
-      const s = String(v ?? "");
-      return /[";\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
-    };
-    const lines: string[] = [];
-    lines.push(esc(title));
-    if (groupName) lines.push(esc(groupName));
-    lines.push(esc(stamp));
-    for (const sec of sections) {
-      lines.push("");
-      if (sec.title) lines.push(esc(sec.title));
-      lines.push(sec.columns.map((c) => esc(c.label)).join(";"));
-      for (const r of sec.rows) {
-        lines.push(sec.columns.map((c) => esc(r[c.key])).join(";"));
-      }
-    }
-    const blob = new Blob(["﻿" + lines.join("\r\n")], {
-      type: "text/csv;charset=utf-8;",
+  // Excel de verdade (.xlsx), com uma aba por seção. A biblioteca é carregada
+  // só no clique para não pesar a abertura da tela.
+  async function downloadExcel() {
+    const XLSX = await import("xlsx");
+    const wb = XLSX.utils.book_new();
+    const usados = new Set<string>();
+
+    sections.forEach((sec, i) => {
+      const aoa = [
+        sec.columns.map((c) => c.label),
+        ...sec.rows.map((r) => sec.columns.map((c) => r[c.key] ?? "")),
+      ];
+      let nome = (sec.title || title || `Planilha ${i + 1}`)
+        // Caracteres que o Excel não aceita em nome de aba.
+        .replace(/[\\/?*[\]:]/g, "")
+        .slice(0, 28);
+      if (!nome) nome = `Planilha ${i + 1}`;
+      let final = nome;
+      let n = 2;
+      while (usados.has(final)) final = `${nome} ${n++}`;
+      usados.add(final);
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(aoa), final);
     });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${slug(title)}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+
+    XLSX.writeFile(wb, `${slug(title)}.xlsx`);
   }
 
   function printReport() {
@@ -130,7 +129,7 @@ export default function ReportView({
         <button onClick={printReport} className="btn-dark !py-2 text-sm">
           🖨️ Imprimir / PDF
         </button>
-        <button onClick={downloadCSV} className="btn-primary !py-2 text-sm">
+        <button onClick={downloadExcel} className="btn-primary !py-2 text-sm">
           ⬇️ Baixar Excel
         </button>
       </div>

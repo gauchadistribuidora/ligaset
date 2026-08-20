@@ -7,6 +7,11 @@ import PaymentRow from "@/components/PaymentRow";
 import ExpenseForm from "@/components/ExpenseForm";
 import ExpenseRow from "@/components/ExpenseRow";
 
+export const dynamic = "force-dynamic";
+
+// "2026-08-14" ou "2026-08-14T..." -> "2026-08"
+const mesDe = (d: string | null | undefined) => (d ? String(d).slice(0, 7) : "");
+
 export default async function PaymentsPage({
   params,
 }: {
@@ -18,18 +23,25 @@ export default async function PaymentsPage({
   const { data: payments } = await supabase
     .from("payments")
     .select(
-      "*, member:group_members(id, name, profile:profiles(full_name, avatar_url))"
+      "*, member:group_members(id, name, profile:profiles(full_name, avatar_url)), lancador:profiles!payments_approved_by_fkey(full_name)"
     )
     .eq("group_id", id)
     .order("reference_month", { ascending: false });
-  const rows = payments ?? [];
+  const umSo = (v: any) => (Array.isArray(v) ? v[0] ?? null : v ?? null);
+  const rows = ((payments ?? []) as any[]).map((p) => ({
+    ...p,
+    lancador: umSo(p.lancador),
+  }));
 
   const { data: expenses } = await supabase
     .from("expenses")
-    .select("*")
+    .select("*, lancador:profiles!expenses_created_by_fkey(full_name)")
     .eq("group_id", id)
     .order("expense_date", { ascending: false });
-  const expenseRows = expenses ?? [];
+  const expenseRows = ((expenses ?? []) as any[]).map((e) => ({
+    ...e,
+    lancador: umSo(e.lancador),
+  }));
 
   // jogadores do grupo (para a cobrança avulsa)
   const { data: members } = isAdmin
@@ -49,6 +61,27 @@ export default async function PaymentsPage({
   const totalExpenses = expenseRows.reduce((s, e) => s + Number(e.amount), 0);
   const saldo = received - totalExpenses;
 
+  // ---- Resumo do mês corrente ----
+  // Entrada conta pela data do pagamento; saída, pela data da despesa. O saldo
+  // inicial é tudo que aconteceu antes do mês.
+  const mesAtual = new Date().toISOString().slice(0, 7);
+  const pagos = rows.filter((p) => p.status === "paid");
+
+  const entradasMes = pagos
+    .filter((p) => mesDe(p.paid_at ?? p.reference_month) === mesAtual)
+    .reduce((s, p) => s + Number(p.amount), 0);
+  const saidasMes = expenseRows
+    .filter((e) => mesDe(e.expense_date) === mesAtual)
+    .reduce((s, e) => s + Number(e.amount), 0);
+  const entradasAntes = pagos
+    .filter((p) => mesDe(p.paid_at ?? p.reference_month) < mesAtual)
+    .reduce((s, p) => s + Number(p.amount), 0);
+  const saidasAntes = expenseRows
+    .filter((e) => mesDe(e.expense_date) < mesAtual)
+    .reduce((s, e) => s + Number(e.amount), 0);
+  const saldoInicial = entradasAntes - saidasAntes;
+  const saldoFinal = saldoInicial + entradasMes - saidasMes;
+
   const byMonth: Record<string, any[]> = {};
   for (const p of rows) {
     (byMonth[p.reference_month] ??= []).push(p);
@@ -57,21 +90,67 @@ export default async function PaymentsPage({
 
   return (
     <div className="space-y-5">
+      <div className="grid grid-cols-3 gap-3">
+        <Stat
+          label="Arrecadado"
+          value={brl(received)}
+          valueClassName="text-sm leading-tight tabular-nums sm:text-lg"
+        />
+        <Stat
+          label="Despesas"
+          value={brl(totalExpenses)}
+          valueClassName="text-sm leading-tight tabular-nums sm:text-lg"
+        />
+        <Stat
+          label="Saldo"
+          valueClassName="text-sm leading-tight tabular-nums sm:text-lg"
+          value={
+            <span className={saldo < 0 ? "text-rose-500" : "text-court-600"}>
+              {brl(saldo)}
+            </span>
+          }
+        />
+      </div>
+
+      {/* Resumo do mês — o que entrou, o que saiu e como o caixa terminou */}
+      <section className="card">
+        <h3 className="mb-3 font-bold capitalize text-slate-800">
+          📊 Resumo de {monthLabel(mesAtual + "-01")}
+        </h3>
+        <div className="divide-y divide-slate-100 text-sm">
+          <div className="flex items-center justify-between py-2">
+            <span className="text-slate-500">Saldo inicial</span>
+            <span className="font-semibold tabular-nums text-slate-700">
+              {brl(saldoInicial)}
+            </span>
+          </div>
+          <div className="flex items-center justify-between py-2">
+            <span className="text-slate-500">Entradas</span>
+            <span className="font-semibold tabular-nums text-court-600">
+              + {brl(entradasMes)}
+            </span>
+          </div>
+          <div className="flex items-center justify-between py-2">
+            <span className="text-slate-500">Saídas</span>
+            <span className="font-semibold tabular-nums text-rose-500">
+              − {brl(saidasMes)}
+            </span>
+          </div>
+          <div className="flex items-center justify-between pt-3">
+            <span className="font-bold text-slate-800">Saldo final</span>
+            <span
+              className={`text-lg font-black tabular-nums ${
+                saldoFinal < 0 ? "text-rose-500" : "text-court-600"
+              }`}
+            >
+              {brl(saldoFinal)}
+            </span>
+          </div>
+        </div>
+      </section>
+
       {isAdmin && (
         <>
-          <div className="grid grid-cols-3 gap-3">
-            <Stat label="Arrecadado" value={brl(received)} valueClassName="text-sm leading-tight tabular-nums sm:text-lg" />
-            <Stat label="Despesas" value={brl(totalExpenses)} valueClassName="text-sm leading-tight tabular-nums sm:text-lg" />
-            <Stat
-              label="Saldo"
-              valueClassName="text-sm leading-tight tabular-nums sm:text-lg"
-              value={
-                <span className={saldo < 0 ? "text-rose-500" : "text-court-600"}>
-                  {brl(saldo)}
-                </span>
-              }
-            />
-          </div>
           <p className="px-1 text-xs text-slate-400">
             {pending} pendente(s) • {overdue} vencida(s).
             {settings && Number(settings.monthly_fee) > 0
@@ -86,33 +165,35 @@ export default async function PaymentsPage({
               href={`/app/groups/${id}/financeiro/relatorio`}
               className="btn-ghost block w-full text-center"
             >
-              📄 Relatório financeiro (PDF / e-mail)
+              📄 Relatório financeiro
             </a>
           </div>
-
-          <section>
-            <h3 className="mb-2 font-bold text-slate-800">💸 Despesas</h3>
-            <ExpenseForm groupId={id} />
-            {expenseRows.length > 0 && (
-              <div className="card mt-2 divide-y divide-slate-100 !p-0">
-                {expenseRows.map((e) => (
-                  <ExpenseRow
-                    key={e.id}
-                    groupId={id}
-                    expense={e}
-                    canManage={isAdmin}
-                  />
-                ))}
-              </div>
-            )}
-          </section>
-
-          {months.length > 0 && (
-            <h3 className="!mt-6 px-1 font-bold text-slate-800">
-              🧾 Mensalidades
-            </h3>
-          )}
         </>
+      )}
+
+      <section>
+        <h3 className="mb-2 font-bold text-slate-800">💸 Despesas</h3>
+        {isAdmin && <ExpenseForm groupId={id} />}
+        {expenseRows.length > 0 ? (
+          <div className="card mt-2 divide-y divide-slate-100 !p-0">
+            {expenseRows.map((e) => (
+              <ExpenseRow
+                key={e.id}
+                groupId={id}
+                expense={e}
+                canManage={isAdmin}
+              />
+            ))}
+          </div>
+        ) : (
+          <p className="px-1 text-sm text-slate-400">
+            Nenhuma despesa lançada.
+          </p>
+        )}
+      </section>
+
+      {months.length > 0 && (
+        <h3 className="!mt-6 px-1 font-bold text-slate-800">🧾 Mensalidades</h3>
       )}
 
       {months.length ? (
@@ -140,7 +221,7 @@ export default async function PaymentsPage({
           desc={
             isAdmin
               ? "Gere as cobranças do mês ou adicione uma cobrança avulsa para começar."
-              : "Você não tem mensalidades registradas neste grupo."
+              : "Ainda não há mensalidades registradas neste grupo."
           }
         />
       )}

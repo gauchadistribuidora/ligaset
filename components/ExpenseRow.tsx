@@ -23,6 +23,9 @@ export default function ExpenseRow({
         <p className="text-xs text-slate-400">
           {shortDate(expense.expense_date)}
           {expense.category ? ` • ${expense.category}` : ""}
+          {expense.lancador?.full_name
+            ? ` • Lançado por ${expense.lancador.full_name}`
+            : ""}
         </p>
       </div>
       <span className="shrink-0 font-bold text-rose-500">

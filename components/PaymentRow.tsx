@@ -43,7 +43,15 @@ export default function PaymentRow({
         <Avatar name={name} url={avatar} size={36} />
         <div className="min-w-0 flex-1">
           <p className="truncate font-semibold">{name}</p>
-          <p className="text-xs text-slate-400">{brl(Number(payment.amount))}</p>
+          <p className="text-xs text-slate-400">
+            {brl(Number(payment.amount))}
+            {payment.status === "paid" && payment.paid_at
+              ? ` • Pago em ${new Date(payment.paid_at).toLocaleDateString("pt-BR")}`
+              : ""}
+            {payment.status === "paid" && payment.lancador?.full_name
+              ? ` • Lançado por ${payment.lancador.full_name}`
+              : ""}
+          </p>
         </div>
 
         {canManage ? (
