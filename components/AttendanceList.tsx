@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { setAttendance, toggleConfirmations } from "@/app/actions/attendance";
+import { createGuestInvite } from "@/app/actions/guests";
 
 type Member = { id: string; name: string | null };
 
@@ -16,6 +17,7 @@ export default function AttendanceList({
   open,
   confirmCode,
   capacity,
+  guestCode,
 }: {
   groupId: string;
   tournamentId: string;
@@ -28,10 +30,12 @@ export default function AttendanceList({
   open: boolean;
   confirmCode: string | null;
   capacity: number | null;
+  guestCode: string | null;
 }) {
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
+  const [copied, setCopied] = useState<"lista" | "convite" | null>(null);
+  const [codigoConvite, setCodigoConvite] = useState(guestCode);
 
   if (!open) {
     if (!isAdmin) return null;
@@ -61,11 +65,19 @@ export default function AttendanceList({
     );
   }
 
-  const emOrdem = [...members].sort((a, b) =>
-    (a.name ?? "").localeCompare(b.name ?? "", "pt-BR")
-  );
+  const alfabetica = (a: Member, b: Member) =>
+    (a.name ?? "").localeCompare(b.name ?? "", "pt-BR");
 
-  const vao = emOrdem
+  // Quem confirmou sobe para o topo; dentro de cada bloco, ordem alfabética.
+  const emOrdem = [...members].sort((a, b) => {
+    const peso = (m: Member) =>
+      answers[m.id] === "yes" ? 0 : answers[m.id] === "no" ? 2 : 1;
+    return peso(a) - peso(b) || alfabetica(a, b);
+  });
+
+  // A vaga é de quem confirmou primeiro, então a fila usa a hora da resposta —
+  // mesmo que a lista na tela apareça em ordem alfabética.
+  const vao = members
     .filter((m) => answers[m.id] === "yes")
     .sort((a, b) => (order[a.id] ?? "").localeCompare(order[b.id] ?? ""));
   const naoVao = emOrdem.filter((m) => answers[m.id] === "no");
@@ -76,10 +88,9 @@ export default function AttendanceList({
   const esperaIds = new Set(capacity ? vao.slice(capacity).map((m) => m.id) : []);
   const dentro = capacity ? vao.slice(0, capacity) : vao;
 
-  const publicLink =
-    confirmCode && typeof window !== "undefined"
-      ? `${window.location.origin}/c/${confirmCode}`
-      : null;
+  const origem = typeof window !== "undefined" ? window.location.origin : "";
+  const publicLink = confirmCode ? `${origem}/c/${confirmCode}` : null;
+  const conviteLink = codigoConvite ? `${origem}/convite/${codigoConvite}` : null;
 
   const responder = (memberId: string, status: "yes" | "no" | null) => {
     setError(null);
@@ -98,7 +109,10 @@ export default function AttendanceList({
           </p>
           <p className="text-xs text-slate-500">
             {capacity
-              ? `${dentro.length} de ${capacity} vagas · ${esperaIds.size} na espera`
+              ? `${dentro.length} de ${capacity} vagas · restam ${Math.max(
+                  0,
+                  capacity - dentro.length
+                )} · ${esperaIds.size} na espera`
               : `${vao.length} confirmado(s)`}{" "}
             · {naoVao.length} fora · {semResposta.length} sem responder
           </p>
@@ -133,18 +147,74 @@ export default function AttendanceList({
             onClick={async () => {
               try {
                 await navigator.clipboard.writeText(publicLink);
-                setCopied(true);
-                setTimeout(() => setCopied(false), 2500);
+                setCopied("lista");
+                setTimeout(() => setCopied(null), 2500);
               } catch {
                 setError("Não consegui copiar. Copie o link na mão.");
               }
             }}
             className="mt-2 text-xs font-bold text-court-600"
           >
-            {copied ? "Copiado! ✓" : "Copiar link"}
+            {copied === "lista" ? "Copiado! ✓" : "Copiar link"}
           </button>
         </div>
       )}
+
+      {/* Convite para quem não é do grupo. É um link só, do jogo: quem recebe
+          escolhe na tela quem o convidou. */}
+      <div className="rounded-xl bg-amber-50 p-3">
+        <p className="text-xs font-semibold text-slate-600">
+          🙋 Link para convidar um amigo
+        </p>
+        {conviteLink ? (
+          <>
+            <p className="mt-1 break-all text-xs text-slate-500">
+              {conviteLink}
+            </p>
+            <div className="mt-2 flex flex-wrap items-center gap-3">
+              <button
+                onClick={async () => {
+                  try {
+                    await navigator.clipboard.writeText(conviteLink);
+                    setCopied("convite");
+                    setTimeout(() => setCopied(null), 2500);
+                  } catch {
+                    setError("Não consegui copiar. Copie o link na mão.");
+                  }
+                }}
+                className="text-xs font-bold text-court-600"
+              >
+                {copied === "convite" ? "Copiado! ✓" : "Copiar link"}
+              </button>
+              <a
+                href={`https://wa.me/?text=${encodeURIComponent(
+                  `Bora jogar? Confirme sua presença aqui: ${conviteLink}`
+                )}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs font-bold text-court-600"
+              >
+                WhatsApp
+              </a>
+            </div>
+          </>
+        ) : (
+          <button
+            disabled={pending}
+            onClick={() => {
+              setError(null);
+              start(async () => {
+                const res = await createGuestInvite(groupId, tournamentId);
+                if (res?.error) setError(res.error);
+                else if (res?.code) setCodigoConvite(res.code);
+              });
+            }}
+            className="mt-2 text-xs font-bold text-court-600"
+          >
+            {pending ? "Gerando..." : "Gerar link de convite"}
+          </button>
+        )}
+      </div>
 
       {myMemberId && (
         <div className="rounded-xl bg-slate-50 p-3">

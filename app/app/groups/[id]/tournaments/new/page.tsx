@@ -44,6 +44,22 @@ export default async function NewTournamentPage({
         </div>
 
         <div>
+          <label className="label">Vagas (opcional)</label>
+          <input
+            name="capacity"
+            type="number"
+            min={0}
+            placeholder="Ex: 12"
+            className="input"
+          />
+          <p className="mt-1 text-xs text-slate-400">
+            Quantos atletas cabem neste jogo. Na confirmação de presença aparece
+            quantos já confirmaram e quantas vagas restam; quem passar do limite
+            entra na lista de espera. Em branco, usa o padrão do grupo.
+          </p>
+        </div>
+
+        <div>
           <label className="label">Categoria</label>
           <select name="category" className="input">
             <option value="">Sem categoria</option>

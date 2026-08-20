@@ -1,7 +1,7 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { brl, shortDate } from "@/lib/format";
+import ConviteConfirm from "@/components/ConviteConfirm";
 
 export const dynamic = "force-dynamic";
 
@@ -33,17 +33,10 @@ export default async function ConvitePage({
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Já logado: entra como convidado e confirma a presença na hora.
-  if (user) {
-    const { data: res } = await supabase.rpc("join_as_guest", { p_code: code });
-    const r = res as any;
-    if (r?.ok && r.group_id) redirect(`/app/groups/${r.group_id}`);
-  }
-
   return (
     <Moldura titulo={info.torneio || info.grupo}>
       <p className="text-sm text-slate-600">
-        <strong>{info.convidou || "Um atleta"}</strong> convidou você para jogar
+        Você foi convidado para jogar
         {info.torneio ? ` no ${info.torneio}` : ""} com o grupo{" "}
         <strong>{info.grupo}</strong>. 🎾
       </p>
@@ -59,6 +52,20 @@ export default async function ConvitePage({
         {info.valor ? (
           <Linha rotulo="Valor da quadra" valor={brl(Number(info.valor))} />
         ) : null}
+        {info.vagas ? (
+          <Linha
+            rotulo="Vagas"
+            valor={`${info.confirmados ?? 0} de ${info.vagas} · restam ${Math.max(
+              0,
+              Number(info.vagas) - Number(info.confirmados ?? 0)
+            )}`}
+          />
+        ) : (
+          <Linha
+            rotulo="Confirmados"
+            valor={String(info.confirmados ?? 0)}
+          />
+        )}
         {info.pix && <Linha rotulo="Pix" valor={info.pix} />}
       </div>
 
@@ -70,16 +77,23 @@ export default async function ConvitePage({
         </p>
       )}
 
-      <div className="mt-5 grid gap-2">
-        <Link href="/criar-conta" className="btn-primary w-full">
-          Criar conta e confirmar
-        </Link>
-        <Link href="/login" className="btn-ghost w-full">
-          Já tenho conta
-        </Link>
-        <p className="text-center text-xs text-slate-400">
-          Depois de entrar, abra este link de novo para confirmar sua presença.
-        </p>
+      <div className="mt-5">
+        {user ? (
+          <ConviteConfirm code={code} atletas={info.atletas ?? []} />
+        ) : (
+          <div className="grid gap-2">
+            <Link href="/criar-conta" className="btn-primary w-full">
+              Criar conta e confirmar
+            </Link>
+            <Link href="/login" className="btn-ghost w-full">
+              Já tenho conta
+            </Link>
+            <p className="text-center text-xs text-slate-400">
+              Depois de entrar, abra este link de novo para confirmar sua
+              presença.
+            </p>
+          </div>
+        )}
       </div>
     </Moldura>
   );

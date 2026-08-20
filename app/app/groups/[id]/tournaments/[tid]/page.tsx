@@ -1,7 +1,6 @@
 import { getGroupContext } from "@/lib/data";
 import { PageHeader, EmptyState } from "@/components/ui";
 import AttendanceList from "@/components/AttendanceList";
-import GuestInviteBox from "@/components/GuestInviteBox";
 import ParticipantsPicker from "@/components/ParticipantsPicker";
 import DrawButton from "@/components/DrawButton";
 import MatchCard from "@/components/MatchCard";
@@ -74,6 +73,15 @@ export default async function TournamentDetail({
         .select("member_id, status, updated_at")
         .eq("tournament_id", tid)
     : { data: [] as any[] };
+
+  const { data: convite } = settings?.confirmations_enabled
+    ? await supabase
+        .from("guest_invites")
+        .select("code")
+        .eq("tournament_id", tid)
+        .limit(1)
+        .maybeSingle()
+    : { data: null as any };
 
   const answers: Record<string, "yes" | "no"> = {};
   const answerOrder: Record<string, string> = {};
@@ -183,17 +191,10 @@ export default async function TournamentDetail({
             isAdmin={isAdmin}
             open={!!tournament.confirmations_open}
             confirmCode={tournament.confirm_code ?? null}
-            capacity={settings?.capacity ?? null}
+            capacity={tournament.capacity ?? settings?.capacity ?? null}
+            guestCode={convite?.code ?? null}
           />
         </div>
-      )}
-
-      {tournament.status !== "finished" && (
-        <GuestInviteBox
-          groupId={id}
-          tournamentId={tid}
-          tournamentName={tournament.name}
-        />
       )}
 
       {canEdit && !isManual && (

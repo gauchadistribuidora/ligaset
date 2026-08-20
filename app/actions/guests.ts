@@ -3,8 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 
-// Convite de amigo: qualquer membro do grupo pode gerar, não só o admin.
-// É esse link que o atleta manda no WhatsApp para o amigo que vai jogar.
+// Convite de convidado: um link por jogo, que roda no grupo inteiro. Quem
+// recebe é que diz quem o convidou — assim um link só serve para todo mundo.
 export async function createGuestInvite(groupId: string, tournamentId: string) {
   const supabase = await createClient();
   const {
@@ -20,13 +20,13 @@ export async function createGuestInvite(groupId: string, tournamentId: string) {
     .maybeSingle();
   if (!membership) return { error: "Você precisa ser do grupo para convidar." };
 
-  // Reaproveita o convite que a pessoa já criou para este mesmo jogo.
+  // Já existe link para este jogo? Reaproveita, seja de quem for.
   const { data: existente } = await supabase
     .from("guest_invites")
     .select("code")
     .eq("group_id", groupId)
     .eq("tournament_id", tournamentId)
-    .eq("invited_by", membership.id)
+    .limit(1)
     .maybeSingle();
   if (existente?.code) return { ok: true, code: existente.code };
 

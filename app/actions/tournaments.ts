@@ -20,6 +20,8 @@ export async function createTournament(groupId: string, formData: FormData) {
   const sets = Number(formData.get("sets") || 1);
   const groups_count = Number(formData.get("groups_count") || 2);
   const advance_count = Number(formData.get("advance_count") || 2);
+  const capacityRaw = String(formData.get("capacity") || "").trim();
+  const capacity = capacityRaw ? Math.max(0, Number(capacityRaw)) || null : null;
   if (!name) return;
 
   const {
@@ -41,6 +43,7 @@ export async function createTournament(groupId: string, formData: FormData) {
       sets,
       groups_count,
       advance_count,
+      capacity,
       created_by: user?.id,
       status: "draft",
     })
