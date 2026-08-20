@@ -65,8 +65,22 @@ export default function PublicAttendance({
       )
     : lista;
 
+  const lotado = !!capacity && dentro.length >= capacity;
+
   return (
     <div className="space-y-4">
+      {lotado && (
+        <div className="rounded-xl bg-amber-50 p-3 text-center ring-1 ring-amber-200">
+          <p className="text-sm font-bold text-amber-800">
+            Quadra lotada ({capacity} de {capacity})
+          </p>
+          <p className="text-xs text-amber-700">
+            Você ainda pode marcar &quot;Vou&quot; — entra na lista de espera e
+            sobe se alguém desistir.
+          </p>
+        </div>
+      )}
+
       <div className="grid grid-cols-2 gap-2 text-center">
         <div className="rounded-xl bg-court-50 p-3">
           <p className="text-2xl font-black text-court-700">{dentro.length}</p>

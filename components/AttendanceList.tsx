@@ -1,7 +1,11 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { setAttendance, toggleConfirmations } from "@/app/actions/attendance";
+import {
+  setAttendance,
+  setTournamentCapacity,
+  toggleConfirmations,
+} from "@/app/actions/attendance";
 import { createGuestInvite } from "@/app/actions/guests";
 
 type Member = { id: string; name: string | null };
@@ -36,6 +40,8 @@ export default function AttendanceList({
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState<"lista" | "convite" | null>(null);
   const [codigoConvite, setCodigoConvite] = useState(guestCode);
+  const [vagas, setVagas] = useState(capacity);
+  const [editandoVagas, setEditandoVagas] = useState(false);
 
   if (!open) {
     if (!isAdmin) return null;
@@ -85,8 +91,8 @@ export default function AttendanceList({
 
   // Quem confirmou depois da quadra lotar entra como espera e sobe sozinho se
   // alguém desistir — a ordem é a da confirmação.
-  const esperaIds = new Set(capacity ? vao.slice(capacity).map((m) => m.id) : []);
-  const dentro = capacity ? vao.slice(0, capacity) : vao;
+  const esperaIds = new Set(vagas ? vao.slice(vagas).map((m) => m.id) : []);
+  const dentro = vagas ? vao.slice(0, vagas) : vao;
 
   const origem = typeof window !== "undefined" ? window.location.origin : "";
   const publicLink = confirmCode ? `${origem}/c/${confirmCode}` : null;
@@ -108,10 +114,10 @@ export default function AttendanceList({
             ✋ Confirmação de presença
           </p>
           <p className="text-xs text-slate-500">
-            {capacity
-              ? `${dentro.length} de ${capacity} vagas · restam ${Math.max(
+            {vagas
+              ? `${dentro.length} de ${vagas} vagas · restam ${Math.max(
                   0,
-                  capacity - dentro.length
+                  vagas - dentro.length
                 )} · ${esperaIds.size} na espera`
               : `${vao.length} confirmado(s)`}{" "}
             · {naoVao.length} fora · {semResposta.length} sem responder
@@ -136,6 +142,111 @@ export default function AttendanceList({
           </button>
         )}
       </div>
+
+      {isAdmin && (
+        <div className="rounded-xl bg-slate-50 p-3">
+          {editandoVagas ? (
+            <form
+              action={(fd) => {
+                const bruto = String(fd.get("vagas") || "").trim();
+                const n = bruto === "" ? null : Number(bruto);
+                setError(null);
+                start(async () => {
+                  const res = await setTournamentCapacity(
+                    groupId,
+                    tournamentId,
+                    n
+                  );
+                  if (res?.error) setError(res.error);
+                  else {
+                    setVagas(n === null || Number.isNaN(n) ? null : Math.max(0, Math.trunc(n)));
+                    setEditandoVagas(false);
+                  }
+                });
+              }}
+              className="flex items-end gap-2"
+            >
+              <div className="flex-1">
+                <label className="label">Vagas deste jogo</label>
+                <input
+                  name="vagas"
+                  type="number"
+                  min={0}
+                  defaultValue={vagas ?? ""}
+                  placeholder="Sem limite"
+                  className="input"
+                  autoFocus
+                />
+              </div>
+              <button disabled={pending} className="btn-primary !py-2 text-sm">
+                {pending ? "..." : "Salvar"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setEditandoVagas(false)}
+                className="btn-ghost !py-2 text-sm"
+              >
+                Cancelar
+              </button>
+            </form>
+          ) : (
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-xs text-slate-600">
+                <strong className="font-semibold text-slate-800">
+                  {vagas ? `${vagas} vagas` : "Sem limite de vagas"}
+                </strong>
+                {vagas ? ` · restam ${Math.max(0, vagas - dentro.length)}` : ""}
+              </p>
+              <div className="flex shrink-0 gap-3">
+                <button
+                  onClick={() => setEditandoVagas(true)}
+                  className="text-xs font-bold text-court-600"
+                >
+                  Alterar
+                </button>
+                {vagas !== dentro.length && (
+                  <button
+                    disabled={pending}
+                    onClick={() => {
+                      if (!confirm("Fechar as vagas no número de confirmados?"))
+                        return;
+                      setError(null);
+                      start(async () => {
+                        const res = await setTournamentCapacity(
+                          groupId,
+                          tournamentId,
+                          dentro.length
+                        );
+                        if (res?.error) setError(res.error);
+                        else setVagas(dentro.length);
+                      });
+                    }}
+                    className="text-xs font-bold text-slate-500"
+                  >
+                    Fechar vagas
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {isAdmin && semResposta.length > 0 && (
+        <a
+          href={`https://wa.me/?text=${encodeURIComponent(
+            `Pessoal, faltou confirmar presença: ${semResposta
+              .map((m) => m.name ?? "")
+              .filter(Boolean)
+              .join(", ")}. Confirmem no app, por favor! 🎾`
+          )}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="btn-ghost w-full !py-2 text-sm"
+        >
+          📣 Cobrar os {semResposta.length} que não responderam
+        </a>
+      )}
 
       {publicLink && (
         <div className="rounded-xl bg-ocean-900/5 p-3">

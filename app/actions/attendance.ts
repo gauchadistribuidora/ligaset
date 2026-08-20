@@ -62,6 +62,34 @@ export async function toggleConfirmations(
   return { ok: true };
 }
 
+// Vagas do jogo. O administrador muda a qualquer momento — inclusive para
+// fechar, colocando o número igual ao de confirmados.
+export async function setTournamentCapacity(
+  groupId: string,
+  tournamentId: string,
+  capacity: number | null
+) {
+  const ctx = await ctxFor(groupId);
+  if (!ctx?.isAdmin) {
+    return { error: "Só o administrador do grupo pode mudar as vagas." };
+  }
+
+  const valor =
+    capacity === null || Number.isNaN(capacity)
+      ? null
+      : Math.max(0, Math.trunc(capacity));
+
+  const { error } = await ctx.supabase
+    .from("tournaments")
+    .update({ capacity: valor })
+    .eq("id", tournamentId)
+    .eq("group_id", groupId);
+  if (error) return { error: error.message };
+
+  revalidatePath(`/app/groups/${groupId}/tournaments/${tournamentId}`);
+  return { ok: true };
+}
+
 // Responde "vou" ou "não vou". Cada um responde por si; o administrador pode
 // responder por outro (tem gente que avisa por telefone e não abre o app).
 export async function setAttendance(

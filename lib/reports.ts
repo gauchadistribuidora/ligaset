@@ -32,6 +32,8 @@ export const REPORTS: { key: string; label: string; desc: string; icon: string }
   { key: "financeiro-mensal", label: "Resumo financeiro mensal", desc: "Saldo inicial, entradas, saídas e saldo final.", icon: "📊" },
   { key: "despesas", label: "Despesas", desc: "Tudo que saiu do caixa, com quem lançou.", icon: "💸" },
   { key: "convidados", label: "Convidados", desc: "Quanto entrou de convidado e quantas vezes cada um veio.", icon: "🙋" },
+  { key: "anfitrioes", label: "Quem mais convida", desc: "Ranking de quem traz convidados para o grupo.", icon: "🤝" },
+  { key: "presencas", label: "Histórico de presença", desc: "Quem confirmou, quem disse não e quem não respondeu.", icon: "✋" },
   { key: "melhores-duplas", label: "Melhores duplas", desc: "Duplas com mais vitórias juntas.", icon: "🤝" },
   { key: "resumo-torneio", label: "Resumo do torneio", desc: "Placar, ranking e destaques de um torneio.", icon: "📄" },
 ];
@@ -328,6 +330,103 @@ export async function buildReport(
             { key: "categoria", label: "Categoria" },
             { key: "valor", label: "Valor", align: "right" },
             { key: "lancado", label: "Lançado por" },
+          ],
+          rows,
+        },
+      ],
+    };
+  }
+
+  // ---------- Quem mais convida ----------
+  if (key === "anfitrioes") {
+    const { data: membros } = await supabase
+      .from("group_members")
+      .select("id, name, is_guest, invited_by")
+      .eq("group_id", groupId);
+
+    const nomes: Record<string, string> = {};
+    for (const m of membros ?? []) nomes[m.id] = m.name || "Atleta";
+
+    const trouxe: Record<string, number> = {};
+    for (const m of membros ?? []) {
+      if (m.is_guest && m.invited_by) {
+        trouxe[m.invited_by] = (trouxe[m.invited_by] ?? 0) + 1;
+      }
+    }
+
+    const rows = Object.entries(trouxe)
+      .map(([id, qtd]) => ({ atleta: nomes[id] || "Atleta", convidados: qtd }))
+      .sort((a, b) => b.convidados - a.convidados);
+
+    return {
+      title: "Quem mais convida",
+      subtitle: `${rows.length} anfitrião(ões)`,
+      sections: [
+        {
+          columns: [
+            { key: "atleta", label: "Atleta" },
+            { key: "convidados", label: "Convidados que trouxe", align: "center" },
+          ],
+          rows,
+        },
+      ],
+    };
+  }
+
+  // ---------- Histórico de presença ----------
+  // Só conta os jogos em que a lista de presença chegou a ser aberta — senão
+  // "não respondeu" apareceria para torneio que nunca teve confirmação.
+  if (key === "presencas") {
+    const { data: tours } = await supabase
+      .from("tournaments")
+      .select("id, name, date")
+      .eq("group_id", groupId)
+      .eq("confirmations_open", true);
+
+    const { data: membros } = await supabase
+      .from("group_members")
+      .select("id, name, is_guest")
+      .eq("group_id", groupId)
+      .eq("status", "active");
+
+    const { data: respostas } = await supabase
+      .from("attendance")
+      .select("member_id, tournament_id, status")
+      .eq("group_id", groupId);
+
+    const totalJogos = (tours ?? []).length;
+    const sim: Record<string, number> = {};
+    const nao: Record<string, number> = {};
+    for (const a of respostas ?? []) {
+      if (a.status === "yes") sim[a.member_id] = (sim[a.member_id] ?? 0) + 1;
+      else if (a.status === "no") nao[a.member_id] = (nao[a.member_id] ?? 0) + 1;
+    }
+
+    const rows = (membros ?? [])
+      .map((m: any) => {
+        const s = sim[m.id] ?? 0;
+        const n = nao[m.id] ?? 0;
+        return {
+          atleta: `${m.name || "Atleta"}${m.is_guest ? " (convidado)" : ""}`,
+          confirmou: s,
+          nao: n,
+          semResposta: Math.max(0, totalJogos - s - n),
+          presenca: totalJogos ? `${Math.round((100 * s) / totalJogos)}%` : "—",
+        };
+      })
+      .sort((a: any, b: any) => b.confirmou - a.confirmou);
+
+    return {
+      title: "Histórico de presença",
+      subtitle: `${totalJogos} jogo(s) com lista aberta`,
+      sections: [
+        {
+          columns: [
+            { key: "atleta", label: "Atleta" },
+            { key: "confirmou", label: "Confirmou", align: "center" },
+            { key: "nao", label: "Disse não", align: "center" },
+            { key: "semResposta", label: "Sem responder", align: "center" },
+            { key: "presenca", label: "Presença", align: "center" },
           ],
           rows,
         },

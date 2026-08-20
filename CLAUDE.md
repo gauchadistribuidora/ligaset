@@ -23,7 +23,7 @@ Site em produção: **https://ligaset.com.br**
 | `lib/` | Regras de negócio: `draw.ts` (sorteio), `bracket.ts` (chaveamento), `finance.ts` (financeiro), `reports.ts` (relatórios), `rei.ts` (Rei da Praia), `data.ts` (consultas), `types.ts` |
 | `lib/supabase/` | Clientes do Supabase: `client.ts` (browser), `server.ts` (server), `middleware.ts` (sessão), `admin.ts` (service role — **nunca usar em código de cliente**) |
 | `app/app/externos/` | **Torneios Federados** — histórico pessoal dos torneios de federação (CBT, FGT, FGBT). Regras em `lib/external.ts`, ações em `app/actions/external.ts` |
-| `supabase/migrations/` | Migrations versionadas, `0001` a `0026` |
+| `supabase/migrations/` | Migrations versionadas, `0001` a `0029` |
 
 ### Torneios Federados (módulo em teste)
 Cada jogador registra os torneios que disputa fora da plataforma: torneio, data,
@@ -134,14 +134,25 @@ desiste, o próximo sobe sozinho.
 **Troféu:** `pneu_seasons` guarda o campeão de cada temporada. O campeão é apurado **no
 servidor** a partir dos lançamentos do período — não vem pronto da tela.
 
+### Presença, vagas e convidados
+**Confirmar presença = entrar na lista do jogo.** Um trigger (`sync_attendance_players`)
+espelha `attendance` em `tournament_players`: quem confirma entra no sorteio, quem diz
+"não" sai. Eram duas listas separadas e o admin repetia a seleção na mão.
+
+**Vagas** ficam em `tournaments.capacity`, com `group_settings.capacity` de reserva. O
+admin altera a qualquer momento no card de confirmação, e "Fechar vagas" iguala o limite
+ao número de confirmados. A fila de espera é sempre pela **hora da confirmação**, mesmo
+com a lista aparecendo em ordem alfabética — a vaga é de quem chegou primeiro.
+
 ### Convidados
 Um **convidado** é quem joga com o grupo sem ser membro (`group_members.is_guest`).
 Qualquer atleta gera o link em um torneio (`app/actions/guests.ts` + `guest_invites`);
 a página pública `/convite/[code]` mostra jogo, horário, quadra, valor e Pix, e quem
 aceita entra como convidado — nunca como membro — e já fica com presença confirmada.
 Em Membros aparece a etiqueta *Convidado* com quantas vezes veio, que é o que permite
-decidir quando chamar para membro. O relatório **Convidados** mostra o que entrou de
-cada um.
+decidir quando chamar para membro. Ao confirmar, o convidado **já gera a cobrança da quadra** (`guest_fee`), sempre
+**pendente** — o dinheiro só entra quando o admin confirmar o Pix. Os relatórios
+**Convidados**, **Quem mais convida** e **Histórico de presença** vivem disso.
 
 ⚠️ **Permissão de função no Postgres:** revogar `EXECUTE` só de `anon` **não funciona** —
 toda função nasce com `EXECUTE` para `PUBLIC` e o `anon` herda. Sempre
