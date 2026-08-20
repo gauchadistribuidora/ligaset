@@ -123,6 +123,23 @@ export default async function SettingsPage({
 
         <label className="flex items-start gap-3 rounded-xl bg-slate-50 p-3">
           <input
+            name="players_can_score"
+            type="checkbox"
+            defaultChecked={settings?.players_can_score ?? false}
+            className="mt-0.5 h-5 w-5 shrink-0 rounded accent-court-500"
+          />
+          <span className="text-sm text-slate-600">
+            <strong className="font-semibold text-slate-800">
+              Jogadores lançam o placar
+            </strong>
+            <br />
+            Quem está no torneio pode atualizar o placar dos jogos. Fica
+            registrado embaixo do placar quem foi que lançou.
+          </span>
+        </label>
+
+        <label className="flex items-start gap-3 rounded-xl bg-slate-50 p-3">
+          <input
             name="pneu_enabled"
             type="checkbox"
             defaultChecked={settings?.pneu_enabled ?? false}

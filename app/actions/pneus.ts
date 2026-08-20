@@ -12,14 +12,9 @@ async function guard(groupId: string) {
   } = await supabase.auth.getUser();
   if (!user) return null;
 
-  const { data: membership } = await supabase
-    .from("group_members")
-    .select("role")
-    .eq("group_id", groupId)
-    .eq("user_id", user.id)
-    .maybeSingle();
-
-  if (!membership || !["owner", "admin"].includes(membership.role)) return null;
+  // Admin do grupo ou quem o admin autorizou.
+  const { data: pode } = await supabase.rpc("can_manage_pneu", { gid: groupId });
+  if (!pode) return null;
   return { supabase, user };
 }
 
@@ -31,6 +26,40 @@ function parseQty(raw: FormDataEntryValue | null): number | null {
   const n = Math.trunc(Number(String(raw ?? "1")));
   if (!Number.isFinite(n) || n === 0) return null;
   return Math.max(-99, Math.min(99, n));
+}
+
+// Autoriza (ou tira a autorização de) um atleta a mexer no ranking do pneu.
+// Só o dono/admin decide isso — não quem já foi autorizado.
+export async function setPneuEditor(
+  groupId: string,
+  memberId: string,
+  allowed: boolean
+) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Sem permissão." };
+
+  const { data: membership } = await supabase
+    .from("group_members")
+    .select("role")
+    .eq("group_id", groupId)
+    .eq("user_id", user.id)
+    .maybeSingle();
+  if (!membership || !["owner", "admin"].includes(membership.role)) {
+    return { error: "Só o dono ou administrador do grupo autoriza." };
+  }
+
+  const { error } = await supabase
+    .from("group_members")
+    .update({ can_manage_pneu: allowed })
+    .eq("id", memberId)
+    .eq("group_id", groupId);
+  if (error) return { error: error.message };
+
+  refresh(groupId);
+  return { ok: true };
 }
 
 export async function addPneu(groupId: string, formData: FormData) {

@@ -61,7 +61,7 @@ export default async function TournamentDetail({
         .order("seed"),
       supabase
         .from("matches")
-        .select("*, result:match_results(*)")
+        .select("*, result:match_results(*, reporter:profiles(full_name))")
         .eq("tournament_id", tid)
         .order("play_order"),
     ]);
@@ -90,10 +90,15 @@ export default async function TournamentDetail({
   const teamsById: Record<string, any> = {};
   for (const t of teams ?? []) teamsById[t.id] = t;
 
-  const normMatches = (matches ?? []).map((m: any) => ({
-    ...m,
-    result: Array.isArray(m.result) ? m.result[0] ?? null : m.result,
-  }));
+  const normMatches = (matches ?? []).map((m: any) => {
+    const result = Array.isArray(m.result) ? m.result[0] ?? null : m.result;
+    if (result?.reporter) {
+      result.reporter = Array.isArray(result.reporter)
+        ? result.reporter[0] ?? null
+        : result.reporter;
+    }
+    return { ...m, result };
+  });
   const hasMatches = normMatches.length > 0;
 
   const format = tournament.format || "round_robin";
@@ -102,7 +107,12 @@ export default async function TournamentDetail({
   const isGroupsKo = format === "groups_ko";
   const isRei = format === "rei_praia";
   const isSimples = format === "simples";
+  const souParticipante = !!myMemberId && selectedIds.includes(myMemberId);
+  const podeLancarPlacar =
+    isAdmin || (!!settings?.players_can_score && souParticipante);
   const canEdit = isAdmin && tournament.status !== "finished";
+  // Lançar placar é uma permissão à parte de administrar o torneio.
+  const canScore = podeLancarPlacar && tournament.status !== "finished";
   const maxGames = tournament.game_format + (tournament.tie_break ? 1 : 0);
   const sets = tournament.sets ?? 1;
 
@@ -215,7 +225,7 @@ export default async function TournamentDetail({
               teamsById={teamsById}
               groupId={id}
               tournamentId={tid}
-              canEdit={canEdit}
+              canEdit={canScore}
               maxGames={maxGames}
               sets={sets}
             />
@@ -238,7 +248,7 @@ export default async function TournamentDetail({
                       tournamentId={tid}
                       match={m}
                       teamsById={teamsById}
-                      canEdit={canEdit}
+                      canEdit={canScore}
                       maxGames={maxGames}
                       sets={sets}
                     />
@@ -261,7 +271,7 @@ export default async function TournamentDetail({
                   teamsById={teamsById}
                   groupId={id}
                   tournamentId={tid}
-                  canEdit={canEdit}
+                  canEdit={canScore}
                   maxGames={maxGames}
                   sets={sets}
                 />
@@ -296,7 +306,7 @@ export default async function TournamentDetail({
                               tournamentId={tid}
                               match={m}
                               teamsById={teamsById}
-                              canEdit={canEdit}
+                              canEdit={canScore}
                               maxGames={maxGames}
                               sets={sets}
                             />
@@ -341,7 +351,7 @@ export default async function TournamentDetail({
                         tournamentId={tid}
                         match={m}
                         teamsById={teamsById}
-                        canEdit={canEdit}
+                        canEdit={canScore}
                         maxGames={maxGames}
                         sets={sets}
                       />

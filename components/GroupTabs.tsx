@@ -25,7 +25,7 @@ export default function GroupTabs({
   ];
 
   return (
-    <div className="mb-5 flex flex-wrap gap-2">
+    <div className="sticky top-0 z-20 -mx-4 mb-5 flex flex-wrap gap-2 border-b border-slate-100 bg-slate-50/95 px-4 py-3 backdrop-blur">
       {tabs.map((t) => {
         const active = t.exact
           ? pathname === t.href

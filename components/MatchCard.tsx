@@ -122,6 +122,12 @@ export default function MatchCard({
         <Row name={teamName(teamB)} scores={shownB} winner={winnerB} />
       </div>
 
+      {finished && result?.reporter?.full_name && (
+        <p className="mt-2 text-[11px] text-slate-400">
+          Placar atualizado por {result.reporter.full_name}
+        </p>
+      )}
+
       {canEdit && !ready && (
         <div className="mt-3 border-t border-slate-100 pt-3 text-center text-xs text-slate-400">
           Aguardando classificados

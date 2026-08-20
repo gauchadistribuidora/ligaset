@@ -4,6 +4,7 @@ import { EmptyState, PneuIcon } from "@/components/ui";
 import PneuForm, { PneuRow } from "@/components/PneuForm";
 import PneuRanking from "@/components/PneuRanking";
 import PneuSeason, { SeasonRow } from "@/components/PneuSeason";
+import PneuEditors from "@/components/PneuEditors";
 
 export const dynamic = "force-dynamic";
 
@@ -58,6 +59,11 @@ export default async function PneusPage({
       />
     );
   }
+
+  const { data: podeLancar } = await supabase.rpc("can_manage_pneu", {
+    gid: id,
+  });
+  const canManage = !!podeLancar;
 
   const desde = inicioDoPeriodo(periodo);
 
@@ -115,10 +121,10 @@ export default async function PneusPage({
     member: Array.isArray(s.member) ? s.member[0] ?? null : s.member,
   }));
 
-  const { data: members } = isAdmin
+  const { data: members } = canManage
     ? await supabase
         .from("group_members")
-        .select("id, name")
+        .select("id, name, can_manage_pneu")
         .eq("group_id", id)
         .eq("status", "active")
         .order("name", { ascending: true })
@@ -151,7 +157,8 @@ export default async function PneusPage({
         ))}
       </div>
 
-      {isAdmin && <PneuForm groupId={id} members={members ?? []} />}
+      {canManage && <PneuForm groupId={id} members={members ?? []} />}
+      {isAdmin && <PneuEditors groupId={id} members={members ?? []} />}
 
       {ranking.length ? (
         <PneuRanking linhas={ranking} />
@@ -163,7 +170,7 @@ export default async function PneusPage({
         />
       )}
 
-      {(seasons.length > 0 || isAdmin) && (
+      {(seasons.length > 0 || canManage) && (
         <section>
           <h2 className="mb-2 font-bold text-slate-800">
             🏆 Campeões da temporada
@@ -175,12 +182,12 @@ export default async function PneusPage({
                   key={s.id}
                   groupId={id}
                   season={s}
-                  canManage={isAdmin}
+                  canManage={canManage}
                 />
               ))}
             </div>
           )}
-          {isAdmin && <PneuSeason groupId={id} />}
+          {canManage && <PneuSeason groupId={id} />}
         </section>
       )}
 
@@ -189,7 +196,7 @@ export default async function PneusPage({
           <h2 className="mb-2 font-bold text-slate-800">Lançamentos</h2>
           <div className="card divide-y divide-slate-50 !p-0">
             {pneus.map((r) => (
-              <PneuRow key={r.id} groupId={id} pneu={r} canManage={isAdmin} />
+              <PneuRow key={r.id} groupId={id} pneu={r} canManage={canManage} />
             ))}
           </div>
         </section>

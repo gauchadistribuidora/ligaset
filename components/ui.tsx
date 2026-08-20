@@ -78,7 +78,7 @@ export function PageHeader({
   action?: React.ReactNode;
 }) {
   return (
-    <header className="mb-5 flex items-start justify-between gap-3">
+    <header className="sticky top-0 z-20 -mx-4 mb-5 flex items-start justify-between gap-3 border-b border-slate-100 bg-slate-50/95 px-4 pb-3 pt-3 backdrop-blur">
       <div className="min-w-0">
         {back && (
           <Link

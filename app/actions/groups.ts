@@ -51,6 +51,7 @@ export async function updateSettings(groupId: string, formData: FormData) {
   const pix_key = String(formData.get("pix_key") || "").trim() || null;
   const capacityRaw = String(formData.get("capacity") || "").trim();
   const capacity = capacityRaw ? Math.max(0, Number(capacityRaw)) || null : null;
+  const players_can_score = formData.get("players_can_score") === "on";
   const pneu_enabled = formData.get("pneu_enabled") === "on";
   const confirmations_enabled = formData.get("confirmations_enabled") === "on";
   const { error } = await supabase
@@ -62,6 +63,7 @@ export async function updateSettings(groupId: string, formData: FormData) {
       due_day,
       pix_key,
       capacity,
+      players_can_score,
       pneu_enabled,
       confirmations_enabled,
     })
