@@ -3,6 +3,9 @@ import "./globals.css";
 import PWARegister from "@/components/PWARegister";
 
 export const metadata: Metadata = {
+  // Sem isso a imagem da prévia vira endereço relativo e o WhatsApp não
+  // consegue buscar.
+  metadataBase: new URL("https://ligaset.com.br"),
   title: "Ligaset — Organize, jogue, ranqueie e evolua",
   description:
     "A plataforma completa para organizar grupos, torneios, rankings e mensalidades do seu esporte.",

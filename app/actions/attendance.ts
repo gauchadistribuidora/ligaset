@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { codigoAmigavel } from "@/lib/slug";
 
 async function ctxFor(groupId: string) {
   const supabase = await createClient();
@@ -43,11 +44,23 @@ export async function toggleConfirmations(
   if (open) {
     const { data: t } = await ctx.supabase
       .from("tournaments")
-      .select("confirm_code")
+      .select("confirm_code, name")
       .eq("id", tournamentId)
       .single();
     if (!t?.confirm_code) {
-      patch.confirm_code = crypto.randomUUID().replace(/-/g, "").slice(0, 12);
+      // Tenta um código curto e legível; se já existir, aumenta o sufixo.
+      for (const tam of [4, 5, 8]) {
+        const tentativa = codigoAmigavel(t?.name ?? "jogo", tam);
+        const { data: ocupado } = await ctx.supabase
+          .from("tournaments")
+          .select("id")
+          .eq("confirm_code", tentativa)
+          .maybeSingle();
+        if (!ocupado) {
+          patch.confirm_code = tentativa;
+          break;
+        }
+      }
     }
   }
 

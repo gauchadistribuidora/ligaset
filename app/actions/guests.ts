@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { codigoAmigavel } from "@/lib/slug";
 
 // Convite de convidado: um link por jogo, que roda no grupo inteiro. Quem
 // recebe é que diz quem o convidou — assim um link só serve para todo mundo.
@@ -30,7 +31,26 @@ export async function createGuestInvite(groupId: string, tournamentId: string) {
     .maybeSingle();
   if (existente?.code) return { ok: true, code: existente.code };
 
-  const code = crypto.randomUUID().replace(/-/g, "").slice(0, 12);
+  const { data: torneio } = await supabase
+    .from("tournaments")
+    .select("name")
+    .eq("id", tournamentId)
+    .maybeSingle();
+
+  let code = "";
+  for (const tam of [4, 5, 8]) {
+    const tentativa = codigoAmigavel(torneio?.name ?? "jogo", tam);
+    const { data: ocupado } = await supabase
+      .from("guest_invites")
+      .select("id")
+      .eq("code", tentativa)
+      .maybeSingle();
+    if (!ocupado) {
+      code = tentativa;
+      break;
+    }
+  }
+  if (!code) return { error: "Não consegui gerar o link. Tente de novo." };
   const { error } = await supabase.from("guest_invites").insert({
     group_id: groupId,
     tournament_id: tournamentId,

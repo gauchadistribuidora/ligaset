@@ -1,9 +1,40 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { brl, shortDate } from "@/lib/format";
 import ConviteConfirm from "@/components/ConviteConfirm";
 
 export const dynamic = "force-dynamic";
+
+// A prévia que aparece no WhatsApp — um link pelado parece golpe.
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ code: string }>;
+}): Promise<Metadata> {
+  const { code } = await params;
+  const supabase = await createClient();
+  const { data } = await supabase.rpc("public_invite_info", { p_code: code });
+  const info = data as any;
+
+  if (!info || info.error) return { title: "Convite — Ligaset" };
+
+  const titulo = `${info.torneio || info.grupo} — você foi convidado`;
+  const descricao = [info.grupo, info.local].filter(Boolean).join(" • ");
+
+  return {
+    title: titulo,
+    description: descricao,
+    openGraph: {
+      title: titulo,
+      description: descricao,
+      siteName: "Ligaset",
+      type: "website",
+      images: ["/icon-512.png"],
+    },
+    twitter: { card: "summary", title: titulo, description: descricao },
+  };
+}
 
 // Convite de amigo. Aberto: o convidado ainda não tem conta.
 export default async function ConvitePage({

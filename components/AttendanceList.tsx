@@ -95,7 +95,7 @@ export default function AttendanceList({
   const dentro = vagas ? vao.slice(0, vagas) : vao;
 
   const origem = typeof window !== "undefined" ? window.location.origin : "";
-  const publicLink = confirmCode ? `${origem}/c/${confirmCode}` : null;
+  const publicLink = confirmCode ? `${origem}/jogo/${confirmCode}` : null;
   const conviteLink = codigoConvite ? `${origem}/convite/${codigoConvite}` : null;
 
   const responder = (memberId: string, status: "yes" | "no" | null) => {

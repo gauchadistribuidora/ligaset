@@ -142,6 +142,13 @@ desiste, o próximo sobe sozinho.
 **Troféu:** `pneu_seasons` guarda o campeão de cada temporada. O campeão é apurado **no
 servidor** a partir dos lançamentos do período — não vem pronto da tela.
 
+### Links públicos
+Endereço legível: `/jogo/<nome-do-jogo>-<4 caracteres>` e `/convite/<...>` (`lib/slug.ts`).
+Um endereço só com número aleatório assusta quem recebe — parece golpe. As duas páginas
+públicas têm `generateMetadata`, então o WhatsApp mostra a prévia com o nome do jogo, o
+grupo e a data; é isso que mais tira a cara de vírus. `/c/<code>` continua existindo e
+redireciona para `/jogo/<code>`, para não quebrar link já enviado.
+
 ### Presença, vagas e convidados
 **Confirmar presença = entrar na lista do jogo.** Um trigger (`sync_attendance_players`)
 espelha `attendance` em `tournament_players`: quem confirma entra no sorteio, quem diz
