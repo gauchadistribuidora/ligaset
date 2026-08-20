@@ -120,9 +120,6 @@ export default function ReportView({
     w.document.close();
   }
 
-  const alignCls = (a?: string) =>
-    a === "right" ? "text-right" : a === "center" ? "text-center" : "text-left";
-
   return (
     <div>
       <div className="mb-4 flex flex-wrap gap-2">
@@ -134,54 +131,56 @@ export default function ReportView({
         </button>
       </div>
 
+      {/* Na tela, cada linha é um cartão: tabela de 5 colunas não cabe no
+          celular e obrigava a rolar de lado. A tabela continua no PDF. */}
       <div className="space-y-6">
-        {sections.map((sec, i) => (
-          <div key={i}>
-            {sec.title && (
-              <h3 className="mb-2 font-bold text-slate-800">{sec.title}</h3>
-            )}
-            <div className="card overflow-x-auto !p-0">
-              <table className="w-full text-sm">
-                <thead className="text-xs text-slate-400">
-                  <tr className="border-b border-slate-100">
-                    {sec.columns.map((c) => (
-                      <th
-                        key={c.key}
-                        className={`px-3 py-2 font-medium ${alignCls(c.align)}`}
-                      >
-                        {c.label}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {sec.rows.map((r, ri) => (
-                    <tr
-                      key={ri}
-                      className="border-b border-slate-50 last:border-0"
-                    >
-                      {sec.columns.map((c) => (
-                        <td
-                          key={c.key}
-                          className={`px-3 py-2 ${alignCls(c.align)} ${
-                            c.key === sec.columns[0].key
-                              ? "font-medium text-slate-800"
-                              : "text-slate-600"
-                          }`}
-                        >
-                          {r[c.key]}
-                        </td>
-                      ))}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              {sec.rows.length === 0 && (
-                <p className="p-4 text-sm text-slate-400">Sem dados.</p>
+        {sections.map((sec, i) => {
+          const [principal, ...demais] = sec.columns;
+          return (
+            <div key={i}>
+              {sec.title && (
+                <h3 className="mb-2 font-bold text-slate-800">{sec.title}</h3>
               )}
+
+              {sec.rows.length === 0 ? (
+                <div className="card text-sm text-slate-400">Sem dados.</div>
+              ) : (
+                <div className="space-y-2">
+                  {sec.rows.map((r, ri) => (
+                    <div key={ri} className="card !p-4">
+                      <p className="font-bold text-slate-900">
+                        {r[principal.key] || "—"}
+                      </p>
+                      {demais.length > 0 && (
+                        <dl className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1.5">
+                          {demais.map((c) => (
+                            <div
+                              key={c.key}
+                              className="flex items-baseline justify-between gap-2 border-b border-slate-50 pb-1"
+                            >
+                              <dt className="shrink-0 text-xs text-slate-400">
+                                {c.label}
+                              </dt>
+                              <dd className="truncate text-sm font-semibold text-slate-700">
+                                {r[c.key] === "" || r[c.key] === undefined
+                                  ? "—"
+                                  : r[c.key]}
+                              </dd>
+                            </div>
+                          ))}
+                        </dl>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <p className="mt-2 px-1 text-xs text-slate-400">
+                {sec.rows.length} registro(s)
+              </p>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
