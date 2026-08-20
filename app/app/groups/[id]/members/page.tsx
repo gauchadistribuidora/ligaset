@@ -16,10 +16,21 @@ export default async function MembersPage({
   const { data: members } = await supabase
     .from("group_members")
     .select(
-      "id, role, status, name, phone, email, user_id, avatar_url, profile:profiles(id, full_name, email, avatar_url)"
+      "id, role, status, name, phone, email, user_id, avatar_url, is_guest, profile:profiles(id, full_name, email, avatar_url)"
     )
     .eq("group_id", id)
     .order("name", { ascending: true });
+
+  // Quantas vezes cada um já confirmou presença (conta as vindas do convidado).
+  const { data: presencas } = await supabase
+    .from("attendance")
+    .select("member_id")
+    .eq("group_id", id)
+    .eq("status", "yes");
+  const visitas: Record<string, number> = {};
+  for (const a of presencas ?? []) {
+    visitas[a.member_id] = (visitas[a.member_id] ?? 0) + 1;
+  }
 
   // Ordem alfabética de verdade: localeCompare respeita acento.
   const ordenados = [...(members ?? [])].sort((a: any, b: any) =>
@@ -43,6 +54,7 @@ export default async function MembersPage({
             member={m}
             canManage={isAdmin}
             isOwnerRow={m.role === "owner"}
+            visitas={visitas[m.id] ?? 0}
           />
         ))}
       </div>

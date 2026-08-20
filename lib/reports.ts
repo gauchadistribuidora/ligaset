@@ -31,6 +31,7 @@ export const REPORTS: { key: string; label: string; desc: string; icon: string }
   { key: "presenca", label: "Presença dos atletas", desc: "Torneios e jogos por atleta.", icon: "📆" },
   { key: "financeiro-mensal", label: "Resumo financeiro mensal", desc: "Saldo inicial, entradas, saídas e saldo final.", icon: "📊" },
   { key: "despesas", label: "Despesas", desc: "Tudo que saiu do caixa, com quem lançou.", icon: "💸" },
+  { key: "convidados", label: "Convidados", desc: "Quanto entrou de convidado e quantas vezes cada um veio.", icon: "🙋" },
   { key: "melhores-duplas", label: "Melhores duplas", desc: "Duplas com mais vitórias juntas.", icon: "🤝" },
   { key: "resumo-torneio", label: "Resumo do torneio", desc: "Placar, ranking e destaques de um torneio.", icon: "📄" },
 ];
@@ -55,6 +56,7 @@ export function inicioDoPeriodo(p?: string): string | null {
 
 // Quais relatórios fazem sentido filtrar por período.
 export const REPORTS_COM_PERIODO = new Set([
+  "convidados",
   "mensalidades",
   "atrasadas",
   "despesas",
@@ -328,6 +330,97 @@ export async function buildReport(
             { key: "lancado", label: "Lançado por" },
           ],
           rows,
+        },
+      ],
+    };
+  }
+
+  // ---------- Convidados ----------
+  // Quem veio como convidado, quanto pagou e quantas vezes apareceu — é o que
+  // ajuda a decidir quem vale chamar para membro.
+  if (key === "convidados") {
+    const { data: convidados } = await supabase
+      .from("group_members")
+      .select("id, name")
+      .eq("group_id", groupId)
+      .eq("is_guest", true);
+
+    const ids = (convidados ?? []).map((g: any) => g.id);
+    if (!ids.length) {
+      return {
+        title: "Convidados",
+        subtitle: "Nenhum convidado ainda",
+        sections: [
+          { columns: [{ key: "vazio", label: "Convidados" }], rows: [] },
+        ],
+      };
+    }
+
+    const nomes: Record<string, string> = {};
+    for (const g of convidados ?? []) nomes[g.id] = g.name || "Convidado";
+
+    let pq = supabase
+      .from("payments")
+      .select("member_id, amount, status, paid_at, reference_month")
+      .eq("group_id", groupId)
+      .in("member_id", ids);
+    if (opts.desde) pq = pq.gte("reference_month", opts.desde);
+    const { data: pays } = await pq;
+
+    const { data: presencas } = await supabase
+      .from("attendance")
+      .select("member_id")
+      .eq("group_id", groupId)
+      .eq("status", "yes")
+      .in("member_id", ids);
+
+    const vezes: Record<string, number> = {};
+    for (const a of presencas ?? []) vezes[a.member_id] = (vezes[a.member_id] ?? 0) + 1;
+
+    const pagoPor: Record<string, number> = {};
+    const entradas = (pays ?? [])
+      .filter((p: any) => p.status === "paid")
+      .sort((a: any, b: any) =>
+        String(b.paid_at ?? b.reference_month).localeCompare(
+          String(a.paid_at ?? a.reference_month)
+        )
+      );
+    for (const p of entradas) {
+      pagoPor[p.member_id] = (pagoPor[p.member_id] ?? 0) + Number(p.amount || 0);
+    }
+    const total = entradas.reduce((s2: number, p: any) => s2 + Number(p.amount || 0), 0);
+
+    return {
+      title: "Convidados",
+      subtitle: `${ids.length} convidado(s) • ${brl(total)} recebido(s)`,
+      sections: [
+        {
+          title: "Entradas recebidas",
+          columns: [
+            { key: "data", label: "Data", align: "center" },
+            { key: "convidado", label: "Convidado" },
+            { key: "valor", label: "Valor", align: "right" },
+          ],
+          rows: entradas.map((p: any) => ({
+            data: shortDate(p.paid_at ?? p.reference_month),
+            convidado: nomes[p.member_id] || "Convidado",
+            valor: brl(Number(p.amount || 0)),
+          })),
+        },
+        {
+          title: "Presenças por convidado",
+          columns: [
+            { key: "convidado", label: "Convidado" },
+            { key: "vezes", label: "Vezes que veio", align: "center" },
+            { key: "pago", label: "Total pago", align: "right" },
+          ],
+          rows: ids
+            .map((gid: string) => ({
+              convidado: nomes[gid],
+              vezes: vezes[gid] ?? 0,
+              pago: brl(pagoPor[gid] ?? 0),
+            }))
+            .sort((a: any, b: any) => b.vezes - a.vezes),
         },
       ],
     };

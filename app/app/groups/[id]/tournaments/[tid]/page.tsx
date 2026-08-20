@@ -1,6 +1,7 @@
 import { getGroupContext } from "@/lib/data";
 import { PageHeader, EmptyState } from "@/components/ui";
 import AttendanceList from "@/components/AttendanceList";
+import GuestInviteBox from "@/components/GuestInviteBox";
 import ParticipantsPicker from "@/components/ParticipantsPicker";
 import DrawButton from "@/components/DrawButton";
 import MatchCard from "@/components/MatchCard";
@@ -185,6 +186,14 @@ export default async function TournamentDetail({
             capacity={settings?.capacity ?? null}
           />
         </div>
+      )}
+
+      {tournament.status !== "finished" && (
+        <GuestInviteBox
+          groupId={id}
+          tournamentId={tid}
+          tournamentName={tournament.name}
+        />
       )}
 
       {canEdit && !isManual && (

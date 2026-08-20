@@ -17,11 +17,15 @@ export default function MemberRow({
   member,
   canManage,
   isOwnerRow,
+  visitas = 0,
 }: {
   groupId: string;
   member: any;
   canManage: boolean;
   isOwnerRow: boolean;
+  // Quantas vezes o convidado já confirmou presença — ajuda a decidir se vale
+  // chamar para membro.
+  visitas?: number;
 }) {
   const [pending, start] = useTransition();
   const [invited, setInvited] = useState(false);
@@ -103,8 +107,21 @@ export default function MemberRow({
             </button>
           </div>
         ) : (
-          <span className="chip bg-slate-100 text-slate-600">
-            {ROLE_LABEL[member.role]}
+          <span
+            className={`chip ${
+              member.is_guest
+                ? "bg-amber-100 text-amber-700"
+                : "bg-slate-100 text-slate-600"
+            }`}
+            title={
+              member.is_guest
+                ? `Convidado • ${visitas} presença(s)`
+                : undefined
+            }
+          >
+            {member.is_guest
+              ? `Convidado${visitas ? ` · ${visitas}` : ""}`
+              : ROLE_LABEL[member.role]}
           </span>
         )}
       </div>

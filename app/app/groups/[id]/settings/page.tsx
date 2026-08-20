@@ -183,6 +183,21 @@ export default async function SettingsPage({
           />
         </div>
         <div>
+          <label className="label">Valor da quadra para convidado (R$)</label>
+          <input
+            name="guest_fee"
+            type="number"
+            step="0.01"
+            min={0}
+            defaultValue={settings?.guest_fee ?? ""}
+            placeholder="Ex: 20,00"
+            className="input"
+          />
+          <p className="mt-1 text-xs text-slate-400">
+            Aparece no convite que o atleta manda para o amigo, junto do Pix.
+          </p>
+        </div>
+        <div>
           <label className="label">Chave Pix do grupo</label>
           <input
             name="pix_key"
