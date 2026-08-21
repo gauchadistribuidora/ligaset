@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import {
   setAttendance,
   setTournamentCapacity,
+  toggleChurrasco,
   toggleConfirmations,
 } from "@/app/actions/attendance";
 import { createGuestInvite } from "@/app/actions/guests";
@@ -23,6 +24,8 @@ export default function AttendanceList({
   capacity,
   guestCode,
   partners,
+  churrascoOf,
+  hasChurrasco,
 }: {
   groupId: string;
   tournamentId: string;
@@ -38,6 +41,9 @@ export default function AttendanceList({
   guestCode: string | null;
   // memberId -> id da dupla declarada por ele
   partners: Record<string, string>;
+  // memberId -> marcou churrasco
+  churrascoOf: Record<string, boolean>;
+  hasChurrasco: boolean;
 }) {
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -92,6 +98,28 @@ export default function AttendanceList({
   const naoVao = emOrdem.filter((m) => answers[m.id] === "no");
   const semResposta = emOrdem.filter((m) => !answers[m.id]);
 
+  // Mesma ordem da lista pública: quem já resolveu a dupla aparece primeiro.
+  const secoes = [
+    {
+      titulo: "Confirmados com dupla",
+      gente: members
+        .filter((m) => answers[m.id] === "yes" && partners[m.id])
+        .sort(alfabetica),
+      forte: true,
+    },
+    {
+      titulo: "Confirmados sem dupla",
+      gente: members
+        .filter((m) => answers[m.id] === "yes" && !partners[m.id])
+        .sort(alfabetica),
+      forte: true,
+    },
+    { titulo: "Falta confirmar", gente: semResposta, forte: false },
+    { titulo: "Estão fora", gente: naoVao, forte: false },
+  ];
+
+  const naChurrasqueira = Object.values(churrascoOf).filter(Boolean).length;
+
   // Quem confirmou depois da quadra lotar entra como espera e sobe sozinho se
   // alguém desistir — a ordem é a da confirmação.
   const esperaIds = new Set(vagas ? vao.slice(vagas).map((m) => m.id) : []);
@@ -128,6 +156,7 @@ export default function AttendanceList({
               : `${vao.length} confirmado(s)`}{" "}
             · {naoVao.length} fora · {semResposta.length} sem responder
             {duplasFormadas > 0 ? ` · ${duplasFormadas} dupla(s)` : ""}
+            {hasChurrasco ? ` · 🍖 ${naChurrasqueira} no churrasco` : ""}
           </p>
         </div>
         {isAdmin && (
@@ -236,6 +265,42 @@ export default function AttendanceList({
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {isAdmin && (
+        <div className="flex items-center justify-between gap-3 rounded-xl bg-amber-50 p-3">
+          <div>
+            <p className="text-xs font-semibold text-slate-700">
+              🍖 Este jogo tem churrasco
+            </p>
+            <p className="text-xs text-slate-500">
+              {hasChurrasco
+                ? "Cada um marca se fica para comer, jogando ou não."
+                : "Ligue para abrir a marcação na lista de presença."}
+            </p>
+          </div>
+          <button
+            disabled={pending}
+            onClick={() => {
+              setError(null);
+              start(async () => {
+                const res = await toggleChurrasco(
+                  groupId,
+                  tournamentId,
+                  !hasChurrasco
+                );
+                if (res?.error) setError(res.error);
+              });
+            }}
+            className={`shrink-0 rounded-lg px-3 py-1.5 text-xs font-bold ${
+              hasChurrasco
+                ? "bg-amber-500 text-white"
+                : "bg-white text-slate-500 ring-1 ring-slate-200"
+            }`}
+          >
+            {hasChurrasco ? "Ligado" : "Desligado"}
+          </button>
         </div>
       )}
 
@@ -366,8 +431,19 @@ export default function AttendanceList({
         </div>
       )}
 
-      <div className="divide-y divide-slate-50">
-        {emOrdem.map((m) => {
+      {secoes.map((sec) => {
+        if (!sec.gente.length) return null;
+        return (
+          <section key={sec.titulo}>
+            <p
+              className={`mb-1 text-xs font-bold ${
+                sec.forte ? "text-court-700" : "text-slate-400"
+              }`}
+            >
+              {sec.titulo} ({sec.gente.length})
+            </p>
+            <div className="divide-y divide-slate-50">
+        {sec.gente.map((m) => {
           const r = answers[m.id];
           return (
             <div key={m.id} className="flex items-center gap-3 py-2">
@@ -394,6 +470,11 @@ export default function AttendanceList({
                     🤝 com{" "}
                     {members.find((x) => x.id === partners[m.id])?.name ??
                       "atleta"}
+                  </p>
+                )}
+                {hasChurrasco && churrascoOf[m.id] && (
+                  <p className="text-xs font-semibold text-amber-600">
+                    🍖 fica para o churrasco
                   </p>
                 )}
                 {esperaIds.has(m.id) && (
@@ -424,6 +505,9 @@ export default function AttendanceList({
           );
         })}
       </div>
+          </section>
+        );
+      })}
 
       {error && <p className="text-sm text-rose-500">{error}</p>}
     </div>

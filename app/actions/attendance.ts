@@ -103,6 +103,29 @@ export async function setTournamentCapacity(
   return { ok: true };
 }
 
+// Liga ou desliga o churrasco do jogo. Ligado, aparece a marcação da carne
+// ao lado de cada nome na lista pública.
+export async function toggleChurrasco(
+  groupId: string,
+  tournamentId: string,
+  tem: boolean
+) {
+  const ctx = await ctxFor(groupId);
+  if (!ctx?.isAdmin) {
+    return { error: "Só o administrador do grupo pode mexer no churrasco." };
+  }
+
+  const { error } = await ctx.supabase
+    .from("tournaments")
+    .update({ has_churrasco: tem })
+    .eq("id", tournamentId)
+    .eq("group_id", groupId);
+  if (error) return { error: error.message };
+
+  revalidatePath(`/app/groups/${groupId}/tournaments/${tournamentId}`);
+  return { ok: true };
+}
+
 // Responde "vou" ou "não vou". Cada um responde por si; o administrador pode
 // responder por outro (tem gente que avisa por telefone e não abre o app).
 export async function setAttendance(

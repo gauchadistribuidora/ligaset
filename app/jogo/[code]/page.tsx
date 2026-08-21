@@ -74,6 +74,7 @@ export default async function ConfirmarPage({
         code={code}
         membros={payload.members ?? []}
         capacity={payload.capacity ?? null}
+        churrasco={!!payload.churrasco}
       />
     </Moldura>
   );

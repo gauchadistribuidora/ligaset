@@ -142,8 +142,17 @@ desiste, o próximo sobe sozinho.
 **Troféu:** `pneu_seasons` guarda o campeão de cada temporada. O campeão é apurado **no
 servidor** a partir dos lançamentos do período — não vem pronto da tela.
 
+### Churrasco do jogo
+`tournaments.has_churrasco` (chave do admin no card) + `attendance.churrasco`.
+A marcação é **independente da presença** — quem está fora da quadra também come —
+por isso `attendance.status` virou anulável: existe linha só de churrasco. Quem lê
+presença filtra `status = 'yes'`, então branco não conta e o convidado só-da-carne
+não entra no sorteio. `public_add_churrasco_guest` cadastra quem vem só comer.
+
 ### Dupla declarada na confirmação
-No mesmo link da presença, cada um escolhe com quem vai jogar
+A lista sai em quatro blocos: confirmados com dupla, confirmados sem dupla, falta
+confirmar, estão fora (a espera segue marcada dentro dos confirmados, pela hora da
+resposta). No mesmo link da presença, cada um escolhe com quem vai jogar
 (`public_set_partner`, `attendance.partner_member_id`). A dupla é **recíproca**
 (A escolhe B ⇒ B fica com A) e **exclusiva** (ninguém rouba dupla já formada;
 trocar de parceiro libera o antigo). Formar dupla confirma a presença dos dois.

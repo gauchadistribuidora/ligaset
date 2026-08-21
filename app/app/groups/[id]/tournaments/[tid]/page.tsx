@@ -72,7 +72,7 @@ export default async function TournamentDetail({
   const { data: attendanceRows } = settings?.confirmations_enabled
     ? await supabase
         .from("attendance")
-        .select("member_id, status, updated_at, partner_member_id")
+        .select("member_id, status, updated_at, partner_member_id, churrasco")
         .eq("tournament_id", tid)
     : { data: [] as any[] };
 
@@ -88,11 +88,14 @@ export default async function TournamentDetail({
   const answers: Record<string, "yes" | "no"> = {};
   // Dupla que cada um declarou no link de confirmação.
   const partners: Record<string, string> = {};
+  // Quem fica para o churrasco.
+  const churrascoOf: Record<string, boolean> = {};
   const answerOrder: Record<string, string> = {};
   for (const a of attendanceRows ?? []) {
-    answers[a.member_id] = a.status;
+    if (a.status) answers[a.member_id] = a.status;
     answerOrder[a.member_id] = a.updated_at ?? "";
     if (a.partner_member_id) partners[a.member_id] = a.partner_member_id;
+    if (a.churrasco) churrascoOf[a.member_id] = true;
   }
 
   const profileIdOf = (m: any) =>
@@ -200,6 +203,8 @@ export default async function TournamentDetail({
             capacity={tournament.capacity ?? settings?.capacity ?? null}
             guestCode={convite?.code ?? null}
             partners={partners}
+            churrascoOf={churrascoOf}
+            hasChurrasco={!!tournament.has_churrasco}
           />
         </div>
       )}
