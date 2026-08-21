@@ -8,7 +8,7 @@ import {
 } from "@/app/actions/attendance";
 import { createGuestInvite } from "@/app/actions/guests";
 
-type Member = { id: string; name: string | null };
+type Member = { id: string; name: string | null; isGuest?: boolean | null };
 
 export default function AttendanceList({
   groupId,
@@ -384,6 +384,11 @@ export default function AttendanceList({
                 >
                   {m.name ?? "Sem nome"}
                 </p>
+                {m.isGuest && (
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                    convidado
+                  </p>
+                )}
                 {partners[m.id] && (
                   <p className="truncate text-xs font-semibold text-court-600">
                     🤝 com{" "}

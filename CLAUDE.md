@@ -149,6 +149,12 @@ No mesmo link da presença, cada um escolhe com quem vai jogar
 trocar de parceiro libera o antigo). Formar dupla confirma a presença dos dois.
 O card do admin mostra as duplas e o total.
 
+### Convidado de fora pela lista pública
+No seletor de dupla dá para digitar o nome de quem não é do grupo
+(`public_add_guest_partner`): entra como `group_members` com `is_guest = true`,
+`invited_by` de quem trouxe, já confirmado e em dupla. Gera a mesma cobrança
+pendente do outro caminho de convidado. A tela marca **convidado** embaixo do nome.
+
 ### Links públicos
 Endereço legível: `/jogo/<nome-do-jogo>-<4 caracteres>` e `/convite/<...>` (`lib/slug.ts`).
 Um endereço só com número aleatório assusta quem recebe — parece golpe. As duas páginas

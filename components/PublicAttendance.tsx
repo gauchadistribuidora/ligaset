@@ -10,6 +10,7 @@ type Membro = {
   updated_at: string | null;
   partner_id?: string | null;
   partner_name?: string | null;
+  is_guest?: boolean | null;
 };
 
 // Confirmação sem login: a pessoa acha o próprio nome na lista e responde.
@@ -48,6 +49,24 @@ export default function PublicAttendance({
         )
       );
     }
+  }
+
+  // Levar alguém de fora: entra na lista como convidado, já em dupla.
+  function convidarDeFora(memberId: string, nome: string) {
+    setError(null);
+    start(async () => {
+      const supabase = createClient();
+      const { data, error: err } = await supabase.rpc(
+        "public_add_guest_partner",
+        { p_code: code, p_member: memberId, p_nome: nome }
+      );
+      if (err || (data as any)?.error) {
+        setError((data as any)?.error ?? "Não consegui salvar. Tente de novo.");
+        return;
+      }
+      setEscolhendo(null);
+      await recarregar();
+    });
   }
 
   function definirDupla(memberId: string, partnerId: string | null) {
@@ -169,6 +188,11 @@ export default function PublicAttendance({
                 >
                   {m.name ?? "Sem nome"}
                 </p>
+                {m.is_guest && (
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                    convidado
+                  </p>
+                )}
                 {m.partner_name ? (
                   <p className="truncate text-xs font-semibold text-court-600">
                     🤝 com {m.partner_name}
@@ -246,6 +270,34 @@ export default function PublicAttendance({
                       Todo mundo já tem dupla.
                     </p>
                   )}
+
+                  <p className="pt-2 text-xs text-slate-400">
+                    ou vai levar alguém de fora?
+                  </p>
+                  <form
+                    action={(fd) => {
+                      const nome = String(fd.get("convidado") || "").trim();
+                      if (!nome) {
+                        setError("Escreva o nome do convidado.");
+                        return;
+                      }
+                      convidarDeFora(m.id, nome);
+                    }}
+                    className="flex gap-2 pt-1"
+                  >
+                    <input
+                      name="convidado"
+                      placeholder="Nome do convidado"
+                      maxLength={60}
+                      className="input flex-1"
+                    />
+                    <button
+                      disabled={pending}
+                      className="btn-primary shrink-0 !px-3 !py-2 text-xs"
+                    >
+                      Convidar
+                    </button>
+                  </form>
                 </div>
               )}
             </div>

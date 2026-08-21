@@ -46,7 +46,7 @@ export default async function TournamentDetail({
     await Promise.all([
       supabase
         .from("group_members")
-        .select("id, name, profile:profiles(id, full_name, avatar_url)")
+        .select("id, name, is_guest, profile:profiles(id, full_name, avatar_url)")
         .eq("group_id", id)
         .eq("status", "active")
         .order("name", { ascending: true }),
@@ -228,7 +228,11 @@ export default async function TournamentDetail({
         <TreinoBuilder
           groupId={id}
           tournamentId={tid}
-          members={(members ?? []).map((m: any) => ({ id: m.id, name: m.name }))}
+          members={(members ?? []).map((m: any) => ({
+            id: m.id,
+            name: m.name,
+            isGuest: m.is_guest,
+          }))}
           teams={teams ?? []}
         />
       )}
