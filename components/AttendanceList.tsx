@@ -22,6 +22,7 @@ export default function AttendanceList({
   confirmCode,
   capacity,
   guestCode,
+  partners,
 }: {
   groupId: string;
   tournamentId: string;
@@ -35,6 +36,8 @@ export default function AttendanceList({
   confirmCode: string | null;
   capacity: number | null;
   guestCode: string | null;
+  // memberId -> id da dupla declarada por ele
+  partners: Record<string, string>;
 }) {
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -94,6 +97,9 @@ export default function AttendanceList({
   const esperaIds = new Set(vagas ? vao.slice(vagas).map((m) => m.id) : []);
   const dentro = vagas ? vao.slice(0, vagas) : vao;
 
+  // Cada dupla aparece nos dois atletas, então conta metade.
+  const duplasFormadas = Math.floor(Object.keys(partners).length / 2);
+
   const origem = typeof window !== "undefined" ? window.location.origin : "";
   const publicLink = confirmCode ? `${origem}/jogo/${confirmCode}` : null;
   const conviteLink = codigoConvite ? `${origem}/convite/${codigoConvite}` : null;
@@ -121,6 +127,7 @@ export default function AttendanceList({
                 )} · ${esperaIds.size} na espera`
               : `${vao.length} confirmado(s)`}{" "}
             · {naoVao.length} fora · {semResposta.length} sem responder
+            {duplasFormadas > 0 ? ` · ${duplasFormadas} dupla(s)` : ""}
           </p>
         </div>
         {isAdmin && (
@@ -377,6 +384,13 @@ export default function AttendanceList({
                 >
                   {m.name ?? "Sem nome"}
                 </p>
+                {partners[m.id] && (
+                  <p className="truncate text-xs font-semibold text-court-600">
+                    🤝 com{" "}
+                    {members.find((x) => x.id === partners[m.id])?.name ??
+                      "atleta"}
+                  </p>
+                )}
                 {esperaIds.has(m.id) && (
                   <p className="text-xs font-semibold text-amber-600">
                     Lista de espera

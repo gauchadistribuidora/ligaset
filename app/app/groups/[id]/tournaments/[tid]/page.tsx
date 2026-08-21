@@ -72,7 +72,7 @@ export default async function TournamentDetail({
   const { data: attendanceRows } = settings?.confirmations_enabled
     ? await supabase
         .from("attendance")
-        .select("member_id, status, updated_at")
+        .select("member_id, status, updated_at, partner_member_id")
         .eq("tournament_id", tid)
     : { data: [] as any[] };
 
@@ -86,10 +86,13 @@ export default async function TournamentDetail({
     : { data: null as any };
 
   const answers: Record<string, "yes" | "no"> = {};
+  // Dupla que cada um declarou no link de confirmação.
+  const partners: Record<string, string> = {};
   const answerOrder: Record<string, string> = {};
   for (const a of attendanceRows ?? []) {
     answers[a.member_id] = a.status;
     answerOrder[a.member_id] = a.updated_at ?? "";
+    if (a.partner_member_id) partners[a.member_id] = a.partner_member_id;
   }
 
   const profileIdOf = (m: any) =>
@@ -196,6 +199,7 @@ export default async function TournamentDetail({
             confirmCode={tournament.confirm_code ?? null}
             capacity={tournament.capacity ?? settings?.capacity ?? null}
             guestCode={convite?.code ?? null}
+            partners={partners}
           />
         </div>
       )}

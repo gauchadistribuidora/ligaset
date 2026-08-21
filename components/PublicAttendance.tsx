@@ -8,6 +8,8 @@ type Membro = {
   name: string | null;
   status: "yes" | "no" | null;
   updated_at: string | null;
+  partner_id?: string | null;
+  partner_name?: string | null;
 };
 
 // Confirmação sem login: a pessoa acha o próprio nome na lista e responde.
@@ -28,6 +30,43 @@ export default function PublicAttendance({
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [busca, setBusca] = useState("");
+  // Quem está com o seletor de dupla aberto.
+  const [escolhendo, setEscolhendo] = useState<string | null>(null);
+
+  // Recarrega do banco: a dupla mexe em duas pessoas ao mesmo tempo, então
+  // atualizar só a linha tocada deixaria a outra desatualizada.
+  async function recarregar() {
+    const supabase = createClient();
+    const { data } = await supabase.rpc("public_attendance_list", {
+      p_code: code,
+    });
+    const payload = data as any;
+    if (payload?.members) {
+      setLista(
+        [...payload.members].sort((a: Membro, b: Membro) =>
+          (a.name ?? "").localeCompare(b.name ?? "", "pt-BR")
+        )
+      );
+    }
+  }
+
+  function definirDupla(memberId: string, partnerId: string | null) {
+    setError(null);
+    start(async () => {
+      const supabase = createClient();
+      const { data, error: err } = await supabase.rpc("public_set_partner", {
+        p_code: code,
+        p_member: memberId,
+        p_partner: partnerId,
+      });
+      if (err || (data as any)?.error) {
+        setError((data as any)?.error ?? "Não consegui salvar. Tente de novo.");
+        return;
+      }
+      setEscolhendo(null);
+      await recarregar();
+    });
+  }
 
   function responder(memberId: string, status: "yes" | "no") {
     setError(null);
@@ -49,6 +88,7 @@ export default function PublicAttendance({
             : m
         )
       );
+      if (status === "no") await recarregar();
     });
   }
 
@@ -66,6 +106,17 @@ export default function PublicAttendance({
     : lista;
 
   const lotado = !!capacity && dentro.length >= capacity;
+
+  // Cada dupla aparece nos dois atletas, então conta metade.
+  const duplasFormadas = Math.floor(
+    lista.filter((m) => m.partner_id).length / 2
+  );
+
+  // Quem pode ser escolhido: qualquer um do grupo ainda sem dupla.
+  const livres = (paraQuem: string) =>
+    lista
+      .filter((m) => m.id !== paraQuem && !m.partner_id)
+      .sort((a, b) => (a.name ?? "").localeCompare(b.name ?? "", "pt-BR"));
 
   return (
     <div className="space-y-4">
@@ -89,8 +140,10 @@ export default function PublicAttendance({
           </p>
         </div>
         <div className="rounded-xl bg-slate-50 p-3">
-          <p className="text-2xl font-black text-slate-700">{espera.length}</p>
-          <p className="text-xs font-semibold text-slate-500">na espera</p>
+          <p className="text-2xl font-black text-slate-700">{duplasFormadas}</p>
+          <p className="text-xs font-semibold text-slate-500">
+            dupla(s) formada(s)
+          </p>
         </div>
       </div>
 
@@ -105,7 +158,7 @@ export default function PublicAttendance({
         {filtrados.map((m) => {
           const naEspera = espera.some((x) => x.id === m.id);
           return (
-            <div key={m.id} className="flex items-center gap-2 py-2">
+            <div key={m.id} className="flex flex-wrap items-center gap-2 py-2">
               <div className="min-w-0 flex-1">
                 <p
                   className={`truncate text-sm ${
@@ -116,6 +169,21 @@ export default function PublicAttendance({
                 >
                   {m.name ?? "Sem nome"}
                 </p>
+                {m.partner_name ? (
+                  <p className="truncate text-xs font-semibold text-court-600">
+                    🤝 com {m.partner_name}
+                  </p>
+                ) : m.status === "yes" ? (
+                  <button
+                    disabled={pending}
+                    onClick={() =>
+                      setEscolhendo((v) => (v === m.id ? null : m.id))
+                    }
+                    className="text-xs font-semibold text-slate-400 underline"
+                  >
+                    escolher dupla
+                  </button>
+                ) : null}
                 {naEspera && (
                   <p className="text-xs font-semibold text-amber-600">
                     Lista de espera
@@ -133,6 +201,16 @@ export default function PublicAttendance({
               >
                 Vou
               </button>
+              {m.partner_id && (
+                <button
+                  disabled={pending}
+                  onClick={() => definirDupla(m.id, null)}
+                  className="rounded-lg px-2 py-1.5 text-xs font-bold text-slate-400 ring-1 ring-slate-200"
+                  title="Desfazer a dupla"
+                >
+                  ✕
+                </button>
+              )}
               <button
                 disabled={pending}
                 onClick={() => responder(m.id, "no")}
@@ -144,6 +222,32 @@ export default function PublicAttendance({
               >
                 Não
               </button>
+              {escolhendo === m.id && (
+                <div className="basis-full pt-2">
+                  <select
+                    defaultValue=""
+                    disabled={pending}
+                    onChange={(e) =>
+                      e.target.value && definirDupla(m.id, e.target.value)
+                    }
+                    className="input"
+                  >
+                    <option value="" disabled>
+                      Vou jogar com...
+                    </option>
+                    {livres(m.id).map((o) => (
+                      <option key={o.id} value={o.id}>
+                        {o.name ?? "Sem nome"}
+                      </option>
+                    ))}
+                  </select>
+                  {!livres(m.id).length && (
+                    <p className="pt-1 text-xs text-slate-400">
+                      Todo mundo já tem dupla.
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
           );
         })}
@@ -157,7 +261,8 @@ export default function PublicAttendance({
       {error && <p className="text-sm text-rose-500">{error}</p>}
 
       <p className="text-center text-xs text-slate-400">
-        Ache o seu nome e toque em Vou ou Não. Não precisa de senha.
+        Ache o seu nome e toque em Vou ou Não. Depois, se já souber, escolha sua
+        dupla. Não precisa de senha.
       </p>
     </div>
   );

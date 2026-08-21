@@ -142,6 +142,13 @@ desiste, o próximo sobe sozinho.
 **Troféu:** `pneu_seasons` guarda o campeão de cada temporada. O campeão é apurado **no
 servidor** a partir dos lançamentos do período — não vem pronto da tela.
 
+### Dupla declarada na confirmação
+No mesmo link da presença, cada um escolhe com quem vai jogar
+(`public_set_partner`, `attendance.partner_member_id`). A dupla é **recíproca**
+(A escolhe B ⇒ B fica com A) e **exclusiva** (ninguém rouba dupla já formada;
+trocar de parceiro libera o antigo). Formar dupla confirma a presença dos dois.
+O card do admin mostra as duplas e o total.
+
 ### Links públicos
 Endereço legível: `/jogo/<nome-do-jogo>-<4 caracteres>` e `/convite/<...>` (`lib/slug.ts`).
 Um endereço só com número aleatório assusta quem recebe — parece golpe. As duas páginas
