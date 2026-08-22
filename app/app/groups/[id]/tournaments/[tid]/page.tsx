@@ -8,6 +8,7 @@ import MatchDeleteButton from "@/components/MatchDeleteButton";
 import FinishButton from "@/components/FinishButton";
 import ManualBuilder from "@/components/ManualBuilder";
 import TreinoBuilder from "@/components/TreinoBuilder";
+import FormatoEditor from "@/components/FormatoEditor";
 import DeleteTournamentButton from "@/components/DeleteTournamentButton";
 import ReopenTournamentButton from "@/components/ReopenTournamentButton";
 import Bracket from "@/components/Bracket";
@@ -193,6 +194,15 @@ export default async function TournamentDetail({
             </div>
           )}
         </div>
+      )}
+
+      {isAdmin && tournament.status !== "finished" && (
+        <FormatoEditor
+          groupId={id}
+          tournamentId={tid}
+          format={format}
+          temJogos={hasMatches}
+        />
       )}
 
       {settings?.confirmations_enabled && tournament.status !== "finished" && (

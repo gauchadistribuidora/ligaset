@@ -451,6 +451,51 @@ async function aplicaPneuAutomatico(
   );
 }
 
+// Troca o formato de um torneio já criado. Não encosta na lista de presença:
+// quem confirmou continua confirmado.
+export async function setTournamentFormat(
+  groupId: string,
+  tournamentId: string,
+  format: string
+) {
+  const permitidos = [
+    "round_robin",
+    "simples",
+    "treino",
+    "rei_praia",
+    "knockout",
+    "groups_ko",
+    "manual",
+  ];
+  if (!permitidos.includes(format)) return { error: "Formato inválido." };
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Faça login." };
+
+  const { data: eu } = await supabase
+    .from("group_members")
+    .select("role")
+    .eq("group_id", groupId)
+    .eq("user_id", user.id)
+    .maybeSingle();
+  if (eu?.role !== "admin") {
+    return { error: "Só o administrador do grupo pode trocar o formato." };
+  }
+
+  const { error } = await supabase
+    .from("tournaments")
+    .update({ format })
+    .eq("id", tournamentId)
+    .eq("group_id", groupId);
+  if (error) return { error: error.message };
+
+  revalidatePath(`/app/groups/${groupId}/tournaments/${tournamentId}`);
+  return { ok: true };
+}
+
 // Traz para o torneio as duplas que o pessoal já formou na lista de
 // confirmação. Evita redigitar o que já está certo.
 export async function importarDuplasDaConfirmacao(
