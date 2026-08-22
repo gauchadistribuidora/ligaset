@@ -5,6 +5,7 @@ import {
   createTeamManual,
   deleteTeamManual,
   registrarJogoTreino,
+  importarDuplasDaConfirmacao,
 } from "@/app/actions/tournaments";
 
 type Member = { id: string; name: string | null };
@@ -23,15 +24,31 @@ export default function TreinoBuilder({
   tournamentId,
   members,
   teams,
+  duplasConfirmadas,
 }: {
   groupId: string;
   tournamentId: string;
   members: Member[];
   teams: Team[];
+  duplasConfirmadas: { a: string; b: string }[];
 }) {
   const [pending, start] = useTransition();
   const [msg, setMsg] = useState<{ ok?: string; error?: string } | null>(null);
   const [abrirDuplas, setAbrirDuplas] = useState(teams.length === 0);
+
+  const nomeDe = (id: string) =>
+    members.find((m) => m.id === id)?.name?.split(" ")[0] ?? "?";
+
+  // Só as que ainda não viraram dupla aqui dentro.
+  const chave = (a: string, b: string) => [a, b].sort().join("|");
+  const jaTem = new Set(
+    teams
+      .filter((t: any) => t.player1?.id && t.player2?.id)
+      .map((t: any) => chave(t.player1.id, t.player2.id))
+  );
+  const pendentes = duplasConfirmadas.filter(
+    (d) => !jaTem.has(chave(d.a, d.b))
+  );
 
   const emOrdem = [...members].sort((a, b) =>
     (a.name ?? "").localeCompare(b.name ?? "", "pt-BR")
@@ -157,6 +174,36 @@ export default function TreinoBuilder({
             {abrirDuplas ? "Fechar" : "Adicionar"}
           </button>
         </div>
+
+        {pendentes.length > 0 && (
+          <div className="rounded-xl bg-court-50 p-3">
+            <p className="text-xs font-semibold text-slate-700">
+              🤝 {pendentes.length} dupla(s) já acertada(s) na confirmação
+            </p>
+            <p className="mt-0.5 text-xs text-slate-500">
+              {pendentes.map((d) => `${nomeDe(d.a)} & ${nomeDe(d.b)}`).join(" · ")}
+            </p>
+            <button
+              disabled={pending}
+              onClick={() => {
+                setMsg(null);
+                start(async () => {
+                  const res = await importarDuplasDaConfirmacao(
+                    groupId,
+                    tournamentId
+                  );
+                  if (res?.error) setMsg({ error: res.error });
+                });
+              }}
+              className="btn-primary mt-2 w-full !py-2 text-sm"
+            >
+              {pending ? "Trazendo..." : "Trazer estas duplas para o torneio"}
+            </button>
+            {msg?.error && (
+              <p className="mt-1 text-xs text-rose-500">{msg.error}</p>
+            )}
+          </div>
+        )}
 
         {abrirDuplas && (
           <form

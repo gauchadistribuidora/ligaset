@@ -451,6 +451,60 @@ async function aplicaPneuAutomatico(
   );
 }
 
+// Traz para o torneio as duplas que o pessoal já formou na lista de
+// confirmação. Evita redigitar o que já está certo.
+export async function importarDuplasDaConfirmacao(
+  groupId: string,
+  tournamentId: string
+) {
+  const supabase = await createClient();
+
+  const { data: respostas } = await supabase
+    .from("attendance")
+    .select("member_id, partner_member_id")
+    .eq("tournament_id", tournamentId)
+    .eq("status", "yes")
+    .not("partner_member_id", "is", null);
+
+  // Cada dupla aparece nas duas pessoas: a chave ordenada junta as duas linhas.
+  const chave = (a: string, b: string) => [a, b].sort().join("|");
+  const pares = new Set<string>();
+  for (const r of respostas ?? []) {
+    pares.add(chave(r.member_id, r.partner_member_id as string));
+  }
+
+  const { data: existentes } = await supabase
+    .from("teams")
+    .select("player1_id, player2_id")
+    .eq("tournament_id", tournamentId);
+
+  const jaTem = new Set(
+    (existentes ?? [])
+      .filter((t: any) => t.player1_id && t.player2_id)
+      .map((t: any) => chave(t.player1_id, t.player2_id))
+  );
+
+  const novas = [...pares].filter((p) => !jaTem.has(p));
+  if (!novas.length) return { ok: true, criadas: 0 };
+
+  const base = existentes?.length ?? 0;
+  const linhas = novas.map((p, i) => {
+    const [a, b] = p.split("|");
+    return {
+      tournament_id: tournamentId,
+      player1_id: a,
+      player2_id: b,
+      seed: base + i + 1,
+    };
+  });
+
+  const { error } = await supabase.from("teams").insert(linhas);
+  if (error) return { error: error.message };
+
+  revalidatePath(`/app/groups/${groupId}/tournaments/${tournamentId}`);
+  return { ok: true, criadas: novas.length };
+}
+
 // ---------- Jogo/Treino ----------
 // Dia de jogos com várias quadras: não dá para sortear antes, porque quem
 // entra é quem estava esperando. Aqui o jogo é registrado depois de acontecer,

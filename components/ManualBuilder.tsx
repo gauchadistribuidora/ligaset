@@ -5,6 +5,7 @@ import {
   createTeamManual,
   deleteTeamManual,
   createMatchManual,
+  importarDuplasDaConfirmacao,
 } from "@/app/actions/tournaments";
 
 function teamLabel(t: any): string {
@@ -20,11 +21,13 @@ export default function ManualBuilder({
   tournamentId,
   members,
   teams,
+  duplasConfirmadas,
 }: {
   groupId: string;
   tournamentId: string;
   members: any[];
   teams: any[];
+  duplasConfirmadas: { a: string; b: string }[];
 }) {
   const [p1, setP1] = useState("");
   const [p2, setP2] = useState("");
@@ -32,6 +35,21 @@ export default function ManualBuilder({
   const [tb, setTb] = useState("");
   const [msg, setMsg] = useState<string | null>(null);
   const [pending, start] = useTransition();
+  const [msgImport, setMsgImport] = useState<string | null>(null);
+
+  const nomeDe = (id: string) =>
+    members.find((m: any) => m.id === id)?.name?.split(" ")[0] ?? "?";
+
+  // Só as que ainda não viraram dupla aqui dentro.
+  const chave = (a: string, b: string) => [a, b].sort().join("|");
+  const jaTem = new Set(
+    teams
+      .filter((t: any) => t.player1?.id && t.player2?.id)
+      .map((t: any) => chave(t.player1.id, t.player2.id))
+  );
+  const pendentes = duplasConfirmadas.filter(
+    (d) => !jaTem.has(chave(d.a, d.b))
+  );
 
   function addTeam() {
     setMsg(null);
@@ -67,6 +85,36 @@ export default function ManualBuilder({
       {/* Duplas */}
       <section>
         <h3 className="mb-2 font-bold text-slate-800">👥 Duplas</h3>
+        {pendentes.length > 0 && (
+          <div className="mb-3 rounded-xl bg-court-50 p-3">
+            <p className="text-xs font-semibold text-slate-700">
+              🤝 {pendentes.length} dupla(s) já acertada(s) na confirmação
+            </p>
+            <p className="mt-0.5 text-xs text-slate-500">
+              {pendentes.map((d) => `${nomeDe(d.a)} & ${nomeDe(d.b)}`).join(" · ")}
+            </p>
+            <button
+              disabled={pending}
+              onClick={() => {
+                setMsgImport(null);
+                start(async () => {
+                  const res = await importarDuplasDaConfirmacao(
+                    groupId,
+                    tournamentId
+                  );
+                  if (res?.error) setMsgImport(res.error);
+                });
+              }}
+              className="btn-primary mt-2 w-full !py-2 text-sm"
+            >
+              {pending ? "Trazendo..." : "Trazer estas duplas para o torneio"}
+            </button>
+            {msgImport && (
+              <p className="mt-1 text-xs text-rose-500">{msgImport}</p>
+            )}
+          </div>
+        )}
+
         <div className="card space-y-3">
           <div className="grid grid-cols-2 gap-2">
             <select value={p1} onChange={(e) => setP1(e.target.value)} className="input">

@@ -98,6 +98,16 @@ export default async function TournamentDetail({
     if (a.churrasco) churrascoOf[a.member_id] = true;
   }
 
+  // Duplas já acertadas na lista de confirmação, sem repetir o par.
+  const duplasConfirmadas = Array.from(
+    new Set(
+      Object.entries(partners).map(([a, b]) => [a, b].sort().join("|"))
+    )
+  ).map((k) => {
+    const [a, b] = k.split("|");
+    return { a, b };
+  });
+
   const profileIdOf = (m: any) =>
     Array.isArray(m.profile) ? m.profile[0]?.id : m.profile?.id;
   const myMemberId =
@@ -231,6 +241,7 @@ export default async function TournamentDetail({
 
       {canEdit && isTreino && (
         <TreinoBuilder
+          duplasConfirmadas={duplasConfirmadas}
           groupId={id}
           tournamentId={tid}
           members={(members ?? []).map((m: any) => ({
@@ -244,6 +255,7 @@ export default async function TournamentDetail({
 
       {canEdit && isManual && (
         <ManualBuilder
+          duplasConfirmadas={duplasConfirmadas}
           groupId={id}
           tournamentId={tid}
           members={members ?? []}

@@ -142,6 +142,12 @@ desiste, o próximo sobe sozinho.
 **Troféu:** `pneu_seasons` guarda o campeão de cada temporada. O campeão é apurado **no
 servidor** a partir dos lançamentos do período — não vem pronto da tela.
 
+### Duplas da confirmação viram times
+`importarDuplasDaConfirmacao` traz para o torneio as duplas que o pessoal já formou
+na lista. O bloco de Duplas (Manual e Jogo/Treino) mostra quantas estão pendentes com
+os nomes e um botão. É idempotente: compara o par ordenado com os times existentes,
+então clicar duas vezes não duplica.
+
 ### Churrasco do jogo
 `tournaments.has_churrasco` (chave do admin no card) + `attendance.churrasco`.
 A marcação é **independente da presença** — quem está fora da quadra também come —
