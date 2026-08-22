@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import {
   setAttendance,
+  setChurrasco,
   setTournamentCapacity,
   toggleChurrasco,
   toggleConfirmations,
@@ -131,6 +132,14 @@ export default function AttendanceList({
   const origem = typeof window !== "undefined" ? window.location.origin : "";
   const publicLink = confirmCode ? `${origem}/jogo/${confirmCode}` : null;
   const conviteLink = codigoConvite ? `${origem}/convite/${codigoConvite}` : null;
+
+  const marcarChurrasco = (memberId: string, sim: boolean) => {
+    setError(null);
+    start(async () => {
+      const res = await setChurrasco(groupId, tournamentId, memberId, sim);
+      if (res?.error) setError(res.error);
+    });
+  };
 
   const responder = (memberId: string, status: "yes" | "no" | null) => {
     setError(null);
@@ -428,6 +437,25 @@ export default function AttendanceList({
               ❌ Não vou
             </button>
           </div>
+
+          {hasChurrasco && (
+            <button
+              disabled={pending}
+              onClick={() =>
+                marcarChurrasco(myMemberId, !churrascoOf[myMemberId])
+              }
+              className={`btn mt-2 w-full !py-2 text-sm ${
+                churrascoOf[myMemberId]
+                  ? "bg-amber-500 text-white"
+                  : "bg-white text-slate-600 ring-1 ring-slate-200"
+              }`}
+            >
+              🍖{" "}
+              {churrascoOf[myMemberId]
+                ? "Fico para o churrasco"
+                : "Vou ficar para o churrasco?"}
+            </button>
+          )}
         </div>
       )}
 
@@ -483,6 +511,24 @@ export default function AttendanceList({
                   </p>
                 )}
               </div>
+              {hasChurrasco && (isAdmin || m.id === myMemberId) && (
+                <button
+                  disabled={pending}
+                  onClick={() => marcarChurrasco(m.id, !churrascoOf[m.id])}
+                  title={
+                    churrascoOf[m.id]
+                      ? "Sai do churrasco"
+                      : "Fica para o churrasco"
+                  }
+                  className={`shrink-0 rounded-lg px-2 py-1 text-sm ${
+                    churrascoOf[m.id]
+                      ? "bg-amber-100 ring-1 ring-amber-300"
+                      : "opacity-40 ring-1 ring-slate-200"
+                  }`}
+                >
+                  🍖
+                </button>
+              )}
               {isAdmin && (
                 <div className="flex shrink-0 gap-1">
                   <button

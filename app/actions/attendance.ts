@@ -103,6 +103,37 @@ export async function setTournamentCapacity(
   return { ok: true };
 }
 
+// Marca ou desmarca alguém no churrasco. Cada um responde por si; o
+// administrador responde por qualquer um. É independente do jogo: quem não vai
+// jogar também come.
+export async function setChurrasco(
+  groupId: string,
+  tournamentId: string,
+  memberId: string,
+  sim: boolean
+) {
+  const ctx = await ctxFor(groupId);
+  if (!ctx) return { error: "Sem permissão." };
+  if (!ctx.isAdmin && memberId !== ctx.memberId) {
+    return { error: "Você só pode responder por você." };
+  }
+
+  const { error } = await ctx.supabase.from("attendance").upsert(
+    {
+      group_id: groupId,
+      tournament_id: tournamentId,
+      member_id: memberId,
+      churrasco: sim,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "tournament_id,member_id" }
+  );
+  if (error) return { error: error.message };
+
+  revalidatePath(`/app/groups/${groupId}/tournaments/${tournamentId}`);
+  return { ok: true };
+}
+
 // Liga ou desliga o churrasco do jogo. Ligado, aparece a marcação da carne
 // ao lado de cada nome na lista pública.
 export async function toggleChurrasco(
@@ -141,9 +172,22 @@ export async function setAttendance(
   }
 
   if (status === null) {
-    const { error } = await ctx.supabase
+    // Quem está no churrasco mantém a linha: só a resposta do jogo fica em
+    // branco. Apagar a linha levaria a carne junto.
+    const { data: linha } = await ctx.supabase
       .from("attendance")
-      .delete()
+      .select("churrasco")
+      .eq("tournament_id", tournamentId)
+      .eq("member_id", memberId)
+      .maybeSingle();
+
+    const query = linha?.churrasco
+      ? ctx.supabase
+          .from("attendance")
+          .update({ status: null, updated_at: new Date().toISOString() })
+      : ctx.supabase.from("attendance").delete();
+
+    const { error } = await query
       .eq("tournament_id", tournamentId)
       .eq("member_id", memberId);
     if (error) return { error: error.message };
