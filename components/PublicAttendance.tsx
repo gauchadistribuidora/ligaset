@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 type Membro = {
@@ -45,6 +45,24 @@ export default function PublicAttendance({
     const payload = data as any;
     if (payload?.members) setLista([...payload.members].sort(porNome));
   }
+
+  // Recarrega sozinha enquanto a página está à vista. Na véspera do jogo várias
+  // pessoas mexem ao mesmo tempo; sem isso, duas escolhem a mesma dupla e uma
+  // leva erro.
+  const recarregarRef = useRef(recarregar);
+  recarregarRef.current = recarregar;
+
+  useEffect(() => {
+    const tick = () => {
+      if (document.visibilityState === "visible") recarregarRef.current();
+    };
+    const id = setInterval(tick, 12000);
+    document.addEventListener("visibilitychange", tick);
+    return () => {
+      clearInterval(id);
+      document.removeEventListener("visibilitychange", tick);
+    };
+  }, []);
 
   function chamar(fn: string, args: Record<string, unknown>) {
     setError(null);

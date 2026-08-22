@@ -148,6 +148,17 @@ na lista. O bloco de Duplas (Manual e Jogo/Treino) mostra quantas estão pendent
 os nomes e um botão. É idempotente: compara o par ordenado com os times existentes,
 então clicar duas vezes não duplica.
 
+### Rateio da carne
+Quem comprou lanca o gasto e o **Pix dele** (`ratearChurrasco`): divide entre todos
+que marcaram o churrasco, nao cobra o comprador (ja pagou) e gera cobranca pendente
+com `payments.pix_key` + `kind = 'churrasco'`. Refazer o rateio troca so o que esta
+em aberto. Depois, um botao manda valor e Pix para o grupo no WhatsApp — e por ali
+que a chave chega em quem deve.
+
+**Cuidado:** `uq_payments_member_month` virou indice parcial (`where tournament_id
+is null`). A regra de uma mensalidade por mes continua; cobranca de jogo pode
+repetir no mes, senao o mesmo convidado vindo duas quintas derrubava a confirmacao.
+
 ### Churrasco do jogo
 `tournaments.has_churrasco` (chave do admin no card) + `attendance.churrasco`.
 A marcação é **independente da presença** — quem está fora da quadra também come —

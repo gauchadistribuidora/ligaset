@@ -451,6 +451,56 @@ async function aplicaPneuAutomatico(
   );
 }
 
+// Repete o jogo da semana: clona a configuração e abre uma lista limpa. Não
+// leva presença, duplas, times nem placar — só o desenho do jogo.
+export async function duplicarTorneio(
+  groupId: string,
+  tournamentId: string,
+  novaData: string | null
+) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Faça login." };
+
+  const { data: eu } = await supabase
+    .from("group_members")
+    .select("role")
+    .eq("group_id", groupId)
+    .eq("user_id", user.id)
+    .maybeSingle();
+  if (!["owner", "admin"].includes(eu?.role ?? "")) {
+    return { error: "Só o dono ou um administrador pode repetir o jogo." };
+  }
+
+  const { data: velho, error: errVelho } = await supabase
+    .from("tournaments")
+    .select(
+      "name, location, courts, category, game_format, tie_break, format, sets, groups_count, advance_count, capacity, has_churrasco"
+    )
+    .eq("id", tournamentId)
+    .eq("group_id", groupId)
+    .single();
+  if (errVelho || !velho) return { error: "Não achei o jogo para repetir." };
+
+  const { data: novo, error } = await supabase
+    .from("tournaments")
+    .insert({
+      ...velho,
+      group_id: groupId,
+      date: novaData || null,
+      created_by: user.id,
+      status: "draft",
+    })
+    .select("id")
+    .single();
+  if (error) return { error: error.message };
+
+  revalidatePath(`/app/groups/${groupId}/tournaments`);
+  return { ok: true, id: novo.id };
+}
+
 // Troca o formato de um torneio já criado. Não encosta na lista de presença:
 // quem confirmou continua confirmado.
 export async function setTournamentFormat(

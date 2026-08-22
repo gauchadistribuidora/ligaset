@@ -134,6 +134,92 @@ export async function setChurrasco(
   return { ok: true };
 }
 
+// Divide o gasto da carne entre quem marcou o churrasco. O Pix é de quem
+// comprou, não do caixa do grupo — e quem comprou não é cobrado, já pagou.
+export async function ratearChurrasco(
+  groupId: string,
+  tournamentId: string,
+  total: number,
+  pix: string,
+  compradorId: string
+) {
+  const ctx = await ctxFor(groupId);
+  if (!ctx?.isAdmin) {
+    return { error: "Só o dono ou um administrador pode ratear o churrasco." };
+  }
+  if (!(total > 0)) return { error: "Informe quanto foi gasto." };
+  if (!pix.trim()) return { error: "Informe o Pix de quem comprou a carne." };
+  if (!compradorId) return { error: "Diga quem comprou a carne." };
+
+  const { data: comem } = await ctx.supabase
+    .from("attendance")
+    .select("member_id")
+    .eq("tournament_id", tournamentId)
+    .eq("churrasco", true);
+
+  const ids = (comem ?? []).map((a) => a.member_id);
+  if (!ids.length) return { error: "Ninguém marcou o churrasco ainda." };
+
+  const { data: torneio } = await ctx.supabase
+    .from("tournaments")
+    .select("date")
+    .eq("id", tournamentId)
+    .single();
+  const quando = torneio?.date ?? new Date().toISOString().slice(0, 10);
+
+  // Divide por todo mundo que come, inclusive quem comprou: a parte dele já
+  // saiu do bolso quando pagou o açougue.
+  const porPessoa = Math.round((total / ids.length) * 100) / 100;
+
+  // Refazer o rateio substitui só o que ainda está em aberto — cobrança já
+  // paga não é mexida.
+  await ctx.supabase
+    .from("payments")
+    .delete()
+    .eq("tournament_id", tournamentId)
+    .eq("kind", "churrasco")
+    .eq("status", "pending");
+
+  const { data: jaPagas } = await ctx.supabase
+    .from("payments")
+    .select("member_id")
+    .eq("tournament_id", tournamentId)
+    .eq("kind", "churrasco");
+  const pagos = new Set((jaPagas ?? []).map((p) => p.member_id));
+
+  const linhas = ids
+    .filter((id) => id !== compradorId && !pagos.has(id))
+    .map((id) => ({
+      group_id: groupId,
+      member_id: id,
+      amount: porPessoa,
+      reference_month: `${quando.slice(0, 7)}-01`,
+      due_date: quando,
+      status: "pending" as const,
+      tournament_id: tournamentId,
+      pix_key: pix.trim(),
+      kind: "churrasco",
+    }));
+
+  if (linhas.length) {
+    const { error } = await ctx.supabase.from("payments").insert(linhas);
+    if (error) return { error: error.message };
+  }
+
+  await ctx.supabase
+    .from("tournaments")
+    .update({
+      churrasco_total: total,
+      churrasco_pix: pix.trim(),
+      churrasco_payee: compradorId,
+    })
+    .eq("id", tournamentId);
+
+  revalidatePath(`/app/groups/${groupId}/tournaments/${tournamentId}`);
+  revalidatePath(`/app/groups/${groupId}/financeiro`);
+  return { ok: true, cobrados: linhas.length, porPessoa };
+}
+
 // Liga ou desliga o churrasco do jogo. Ligado, aparece a marcação da carne
 // ao lado de cada nome na lista pública.
 export async function toggleChurrasco(

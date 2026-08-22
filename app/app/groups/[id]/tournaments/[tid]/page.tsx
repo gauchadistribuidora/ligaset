@@ -9,6 +9,7 @@ import FinishButton from "@/components/FinishButton";
 import ManualBuilder from "@/components/ManualBuilder";
 import TreinoBuilder from "@/components/TreinoBuilder";
 import FormatoEditor from "@/components/FormatoEditor";
+import RepetirJogo from "@/components/RepetirJogo";
 import DeleteTournamentButton from "@/components/DeleteTournamentButton";
 import ReopenTournamentButton from "@/components/ReopenTournamentButton";
 import Bracket from "@/components/Bracket";
@@ -196,6 +197,8 @@ export default async function TournamentDetail({
         </div>
       )}
 
+      {isAdmin && <RepetirJogo groupId={id} tournamentId={tid} />}
+
       {isAdmin && tournament.status !== "finished" && (
         <FormatoEditor
           groupId={id}
@@ -225,6 +228,11 @@ export default async function TournamentDetail({
             partners={partners}
             churrascoOf={churrascoOf}
             hasChurrasco={!!tournament.has_churrasco}
+            jogo={{
+              nome: tournament.name,
+              data: tournament.date ? shortDate(tournament.date) : null,
+              local: tournament.location ?? null,
+            }}
           />
         </div>
       )}

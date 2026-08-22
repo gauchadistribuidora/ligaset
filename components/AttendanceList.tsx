@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import {
+  ratearChurrasco,
   setAttendance,
   setChurrasco,
   setTournamentCapacity,
@@ -9,6 +10,7 @@ import {
   toggleConfirmations,
 } from "@/app/actions/attendance";
 import { createGuestInvite } from "@/app/actions/guests";
+import { brl } from "@/lib/format";
 
 type Member = { id: string; name: string | null; isGuest?: boolean | null };
 
@@ -27,6 +29,7 @@ export default function AttendanceList({
   partners,
   churrascoOf,
   hasChurrasco,
+  jogo,
 }: {
   groupId: string;
   tournamentId: string;
@@ -45,6 +48,7 @@ export default function AttendanceList({
   // memberId -> marcou churrasco
   churrascoOf: Record<string, boolean>;
   hasChurrasco: boolean;
+  jogo: { nome: string; data: string | null; local: string | null };
 }) {
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -52,6 +56,12 @@ export default function AttendanceList({
   const [codigoConvite, setCodigoConvite] = useState(guestCode);
   const [vagas, setVagas] = useState(capacity);
   const [editandoVagas, setEditandoVagas] = useState(false);
+  const [abrirRateio, setAbrirRateio] = useState(false);
+  const [rateioOk, setRateioOk] = useState<{
+    porPessoa: number;
+    cobrados: number;
+    pix: string;
+  } | null>(null);
 
   if (!open) {
     if (!isAdmin) return null;
@@ -128,6 +138,54 @@ export default function AttendanceList({
 
   // Cada dupla aparece nos dois atletas, então conta metade.
   const duplasFormadas = Math.floor(Object.keys(partners).length / 2);
+
+  const nomeDe = (id: string) => members.find((x) => x.id === id)?.name ?? "";
+
+  // Resumo pronto para colar no grupo — cada dupla aparece uma vez só.
+  function montarResumo(link: string | null) {
+    const vistas = new Set<string>();
+    const paresTexto: string[] = [];
+    for (const m of vao) {
+      const p = partners[m.id];
+      if (!p || vistas.has(m.id)) continue;
+      vistas.add(m.id);
+      vistas.add(p);
+      paresTexto.push(`• ${m.name ?? ""} e ${nomeDe(p)}`);
+    }
+
+    const semDupla = vao.filter((m) => !partners[m.id]).map((m) => m.name ?? "");
+
+    const linhas = [
+      `🎾 ${jogo.nome}${jogo.data ? ` — ${jogo.data}` : ""}`,
+      jogo.local ? `📍 ${jogo.local}` : null,
+      "",
+      vagas
+        ? `✅ ${dentro.length} de ${vagas} vagas · restam ${Math.max(
+            0,
+            vagas - dentro.length
+          )}`
+        : `✅ ${vao.length} confirmados`,
+      esperaIds.size ? `⏳ ${esperaIds.size} na lista de espera` : null,
+      hasChurrasco ? `🍖 ${naChurrasqueira} no churrasco` : null,
+      "",
+      paresTexto.length ? `Duplas (${paresTexto.length}):` : null,
+      ...paresTexto,
+      semDupla.length ? "" : null,
+      semDupla.length
+        ? `Ainda sem dupla (${semDupla.length}): ${semDupla.join(", ")}`
+        : null,
+      semResposta.length ? "" : null,
+      semResposta.length
+        ? `Falta confirmar (${semResposta.length}): ${semResposta
+            .map((m) => m.name ?? "")
+            .join(", ")}`
+        : null,
+      link ? "" : null,
+      link ? `Confirme aqui: ${link}` : null,
+    ];
+
+    return linhas.filter((l) => l !== null).join("\n");
+  }
 
   const origem = typeof window !== "undefined" ? window.location.origin : "";
   const publicLink = confirmCode ? `${origem}/jogo/${confirmCode}` : null;
@@ -313,6 +371,139 @@ export default function AttendanceList({
         </div>
       )}
 
+      {isAdmin && hasChurrasco && naChurrasqueira > 0 && (
+        <div className="rounded-xl bg-amber-50 p-3">
+          {abrirRateio ? (
+            <form
+              action={(fd) => {
+                const total = Number(
+                  String(fd.get("total") || "").replace(",", ".")
+                );
+                const pix = String(fd.get("pix") || "");
+                const comprador = String(fd.get("comprador") || "");
+                setError(null);
+                setRateioOk(null);
+                start(async () => {
+                  const res = await ratearChurrasco(
+                    groupId,
+                    tournamentId,
+                    total,
+                    pix,
+                    comprador
+                  );
+                  if (res?.error) setError(res.error);
+                  else {
+                    setRateioOk({
+                      porPessoa: res?.porPessoa ?? 0,
+                      cobrados: res?.cobrados ?? 0,
+                      pix,
+                    });
+                    setAbrirRateio(false);
+                  }
+                });
+              }}
+              className="space-y-2"
+            >
+              <p className="text-xs font-semibold text-slate-700">
+                🍖 Ratear a carne entre os {naChurrasqueira}
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="label">Total gasto (R$)</label>
+                  <input
+                    name="total"
+                    inputMode="decimal"
+                    placeholder="350,00"
+                    className="input"
+                  />
+                </div>
+                <div>
+                  <label className="label">Quem comprou</label>
+                  <select name="comprador" defaultValue="" className="input">
+                    <option value="" disabled>
+                      Selecione...
+                    </option>
+                    {members
+                      .filter((m) => churrascoOf[m.id])
+                      .sort(alfabetica)
+                      .map((m) => (
+                        <option key={m.id} value={m.id}>
+                          {m.name ?? "Atleta"}
+                        </option>
+                      ))}
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="label">Pix de quem comprou</label>
+                <input
+                  name="pix"
+                  placeholder="CPF, telefone, e-mail ou chave aleatória"
+                  className="input"
+                />
+              </div>
+              <div className="flex gap-2">
+                <button disabled={pending} className="btn-primary flex-1 !py-2 text-sm">
+                  {pending ? "Rateando..." : "Criar as cobranças"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAbrirRateio(false)}
+                  className="btn-ghost !py-2 text-sm"
+                >
+                  Cancelar
+                </button>
+              </div>
+              <p className="text-xs text-slate-500">
+                Divide entre os {naChurrasqueira} que marcaram. Quem comprou não
+                é cobrado — já pagou — e o Pix das cobranças é o dele.
+              </p>
+            </form>
+          ) : (
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-xs text-slate-600">
+                🍖 Já comprou a carne? Divida o gasto entre os{" "}
+                {naChurrasqueira} que vão comer.
+              </p>
+              <button
+                onClick={() => setAbrirRateio(true)}
+                className="shrink-0 text-xs font-bold text-court-600"
+              >
+                Ratear
+              </button>
+            </div>
+          )}
+          {rateioOk && (
+            <div className="mt-2 space-y-2">
+              <p className="text-xs font-semibold text-court-600">
+                {rateioOk.cobrados} cobrança(s) de {brl(rateioOk.porPessoa)}{" "}
+                criadas, pendentes até você confirmar cada Pix.
+              </p>
+              {/* O Pix é de quem comprou a carne, então quem deve precisa
+                  recebê-lo — e isso acontece no grupo, não numa tela. */}
+              <a
+                href={`https://wa.me/?text=${encodeURIComponent(
+                  `🍖 Churrasco do ${jogo.nome}
+
+Deu ${brl(
+                    rateioOk.porPessoa
+                  )} por pessoa (${naChurrasqueira} no churrasco).
+
+Pix: ${
+                    rateioOk.pix
+                  }`
+                )}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn-ghost w-full !py-2 text-sm"
+              >
+                📋 Mandar o valor e o Pix no grupo
+              </a>
+            </div>
+          )}
+        </div>
+      )}
+
       {isAdmin && semResposta.length > 0 && (
         <a
           href={`https://wa.me/?text=${encodeURIComponent(
@@ -328,6 +519,17 @@ export default function AttendanceList({
           📣 Cobrar os {semResposta.length} que não responderam
         </a>
       )}
+
+      <a
+        href={`https://wa.me/?text=${encodeURIComponent(
+          montarResumo(publicLink)
+        )}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="btn-ghost w-full !py-2 text-sm"
+      >
+        📋 Resumo do jogo para o grupo
+      </a>
 
       {publicLink && (
         <div className="rounded-xl bg-ocean-900/5 p-3">

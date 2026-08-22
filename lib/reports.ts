@@ -32,6 +32,7 @@ export const REPORTS: { key: string; label: string; desc: string; icon: string }
   { key: "financeiro-mensal", label: "Resumo financeiro mensal", desc: "Saldo inicial, entradas, saídas e saldo final.", icon: "📊" },
   { key: "despesas", label: "Despesas", desc: "Tudo que saiu do caixa, com quem lançou.", icon: "💸" },
   { key: "convidados", label: "Convidados", desc: "Quanto entrou de convidado e quantas vezes cada um veio.", icon: "🙋" },
+  { key: "parcerias", label: "Com quem cada um joga", desc: "As duplas que mais se repetem na temporada.", icon: "🤝" },
   { key: "anfitrioes", label: "Quem mais convida", desc: "Ranking de quem traz convidados para o grupo.", icon: "🤝" },
   { key: "presencas", label: "Histórico de presença", desc: "Quem confirmou, quem disse não e quem não respondeu.", icon: "✋" },
   { key: "melhores-duplas", label: "Melhores duplas", desc: "Duplas com mais vitórias juntas.", icon: "🤝" },
@@ -330,6 +331,61 @@ export async function buildReport(
             { key: "categoria", label: "Categoria" },
             { key: "valor", label: "Valor", align: "right" },
             { key: "lancado", label: "Lançado por" },
+          ],
+          rows,
+        },
+      ],
+    };
+  }
+
+  // ---------- Com quem cada um joga ----------
+  if (key === "parcerias") {
+    const { data: tours } = await supabase
+      .from("tournaments")
+      .select("id")
+      .eq("group_id", groupId);
+    const ids = (tours ?? []).map((t: any) => t.id);
+
+    const { data: times } = ids.length
+      ? await supabase
+          .from("teams")
+          .select("player1_id, player2_id")
+          .in("tournament_id", ids)
+      : { data: [] as any[] };
+
+    const { data: membros } = await supabase
+      .from("group_members")
+      .select("id, name")
+      .eq("group_id", groupId);
+    const nomes: Record<string, string> = {};
+    for (const m of membros ?? []) nomes[m.id] = m.name || "Atleta";
+
+    // A dupla e a mesma nos dois sentidos, entao a chave vai ordenada.
+    const vezes: Record<string, number> = {};
+    for (const t of times ?? []) {
+      if (!t.player1_id || !t.player2_id) continue;
+      const k = [t.player1_id, t.player2_id].sort().join("|");
+      vezes[k] = (vezes[k] ?? 0) + 1;
+    }
+
+    const rows = Object.entries(vezes)
+      .map(([k, n]) => {
+        const [a, b] = k.split("|");
+        return {
+          dupla: `${nomes[a] ?? "Atleta"} e ${nomes[b] ?? "Atleta"}`,
+          vezes: n,
+        };
+      })
+      .sort((a: any, b: any) => b.vezes - a.vezes);
+
+    return {
+      title: "Com quem cada um joga",
+      subtitle: `${rows.length} dupla(s) diferente(s)`,
+      sections: [
+        {
+          columns: [
+            { key: "dupla", label: "Dupla" },
+            { key: "vezes", label: "Vezes que jogaram juntos", align: "center" },
           ],
           rows,
         },
