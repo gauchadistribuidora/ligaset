@@ -475,14 +475,17 @@ export async function setTournamentFormat(
   } = await supabase.auth.getUser();
   if (!user) return { error: "Faça login." };
 
+  // Dono e administrador podem, como no resto do app.
   const { data: eu } = await supabase
     .from("group_members")
     .select("role")
     .eq("group_id", groupId)
     .eq("user_id", user.id)
     .maybeSingle();
-  if (eu?.role !== "admin") {
-    return { error: "Só o administrador do grupo pode trocar o formato." };
+  if (!["owner", "admin"].includes(eu?.role ?? "")) {
+    return {
+      error: "Só o dono ou um administrador do grupo pode trocar o formato.",
+    };
   }
 
   const { error } = await supabase
