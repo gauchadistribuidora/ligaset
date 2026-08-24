@@ -148,6 +148,13 @@ na lista. O bloco de Duplas (Manual e Jogo/Treino) mostra quantas estão pendent
 os nomes e um botão. É idempotente: compara o par ordenado com os times existentes,
 então clicar duas vezes não duplica.
 
+### Cobranca por link
+Botao no financeiro gera `/cobrar/<codigo>` (`charge_links` + `public_charge_info`):
+valor opcional — em branco, quem paga digita. A pagina publica mostra o QR e o copia
+e cola da chave do grupo, com previa no WhatsApp. RLS: so dono/admin criam; anon le
+apenas pela funcao e so sabendo o codigo. **O dinheiro vai direto para a chave do
+grupo — o Ligaset nao recebe nem intermedeia, e por isso nao ha baixa automatica.**
+
 ### QR Code do Pix
 `lib/pix.ts` monta o "copia e cola" (BR Code do Banco Central) e `components/PixQR.tsx`
 desenha o QR com `qrcode-generator`. **Nao ha gateway, taxa nem servico de terceiro** —

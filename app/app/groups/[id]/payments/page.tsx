@@ -7,6 +7,7 @@ import PaymentRow from "@/components/PaymentRow";
 import ExpenseForm from "@/components/ExpenseForm";
 import ExpenseRow from "@/components/ExpenseRow";
 import PixQR from "@/components/PixQR";
+import CobrancaPorLink from "@/components/CobrancaPorLink";
 
 export const dynamic = "force-dynamic";
 
@@ -143,6 +144,8 @@ export default async function PaymentsPage({
           </p>
         </div>
       )}
+
+      {isAdmin && <CobrancaPorLink groupId={id} />}
 
       <div className="grid grid-cols-3 gap-3">
         <Stat
