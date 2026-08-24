@@ -4,6 +4,9 @@ import { useState, useTransition } from "react";
 import { criarLinkCobranca } from "@/app/actions/cobranca";
 import { brl } from "@/lib/format";
 
+// O texto pode ter várias linhas; em resumo e título usamos só a primeira.
+const primeiraLinha = (texto: string) => texto.split("\n")[0].trim();
+
 // Gera um link de cobrança para mandar por WhatsApp. O valor é opcional: sem
 // ele, quem paga digita quanto quer.
 export default function CobrancaPorLink({ groupId }: { groupId: string }) {
@@ -56,7 +59,7 @@ export default function CobrancaPorLink({ groupId }: { groupId: string }) {
               {feito?.valor
                 ? `Cobrança de ${brl(feito.valor)}`
                 : "Cobrança sem valor definido"}
-              {feito?.descricao ? ` · ${feito.descricao}` : ""}
+              {feito?.descricao ? ` · ${primeiraLinha(feito.descricao)}` : ""}
             </p>
             <p className="mt-1 break-all text-xs text-slate-500">{link}</p>
           </div>
@@ -118,31 +121,37 @@ export default function CobrancaPorLink({ groupId }: { groupId: string }) {
           }}
           className="space-y-2"
         >
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <label className="label">Valor (opcional)</label>
-              <input
-                name="valor"
-                inputMode="decimal"
-                placeholder="50,00"
-                className="input"
-              />
-            </div>
-            <div>
-              <label className="label">Do que se trata</label>
-              <input
-                name="descricao"
-                maxLength={40}
-                placeholder="Mensalidade, quadra..."
-                className="input"
-              />
-            </div>
+          <div>
+            <label className="label">Valor (opcional)</label>
+            <input
+              name="valor"
+              inputMode="decimal"
+              placeholder="50,00"
+              className="input"
+            />
+            <p className="mt-1 text-xs text-slate-400">
+              Sem valor, quem receber digita quanto vai pagar — útil quando há
+              mais de um preço.
+            </p>
           </div>
 
-          <p className="text-xs text-slate-400">
-            Sem valor, quem receber digita quanto vai pagar. O dinheiro cai
-            direto na chave Pix do grupo.
-          </p>
+          <div>
+            <label className="label">O que escrever para quem receber</label>
+            <textarea
+              name="descricao"
+              rows={6}
+              maxLength={600}
+              placeholder={`Playzão 28/08 - Cartel
+
+Valor para quem só vai jogar: R$ 50,00
+Valor para Jogo + Cachorro quente: R$ 75,00`}
+              className="input resize-y font-normal"
+            />
+            <p className="mt-1 text-xs text-slate-400">
+              Pode usar várias linhas — o texto aparece na página de pagamento
+              do jeito que você escrever.
+            </p>
+          </div>
 
           <button disabled={pending} className="btn-primary w-full !py-2 text-sm">
             {pending ? "Gerando..." : "Gerar link de cobrança"}

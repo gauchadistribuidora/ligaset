@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { codigoAmigavel } from "@/lib/slug";
+import { primeiraLinha } from "@/lib/format";
 
 // Link de cobrança: o administrador gera um endereço e manda para quem quiser.
 // Quem abre vê o QR do Pix do grupo, com valor sugerido ou em branco.
@@ -38,7 +39,8 @@ export async function criarLinkCobranca(
     };
   }
 
-  const base = descricao?.trim() || "cobranca";
+  // O texto pode ter várias linhas; o endereço usa só a primeira.
+  const base = primeiraLinha(descricao) || "cobranca";
   let code = "";
   for (const tam of [4, 5, 8]) {
     const tentativa = codigoAmigavel(base, tam);

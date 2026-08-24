@@ -97,6 +97,12 @@ export default function PixQR({
       <p className="mt-2 text-center text-[11px] text-slate-400">
         Abra o app do banco, escolha Pix &gt; Pix Copia e Cola — ou leia o QR.
       </p>
+
+      {/* Deixa claro para quem paga que o dinheiro nao passa pelo Ligaset. */}
+      <p className="mt-2 border-t border-slate-100 pt-2 text-center text-[10px] leading-snug text-slate-300">
+        O app Ligaset não recebe pagamentos. Este QR Code foi gerado para o
+        recebimento cair no Pix informado pelo administrador do grupo.
+      </p>
     </div>
   );
 }

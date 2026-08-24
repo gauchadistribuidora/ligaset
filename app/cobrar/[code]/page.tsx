@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import PixQR from "@/components/PixQR";
-import { brl } from "@/lib/format";
+import { brl, primeiraLinha } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
 
@@ -25,7 +25,8 @@ export async function generateMetadata({
   const titulo = info.valor
     ? `${info.grupo} — ${brl(Number(info.valor))}`
     : `${info.grupo} — pagamento`;
-  const descricao = info.descricao || "Pague com Pix pelo Ligaset";
+  const descricao =
+    primeiraLinha(info.descricao) || "Pague com Pix pelo Ligaset";
 
   return {
     title: titulo,
@@ -67,7 +68,7 @@ export default async function CobrarPage({
         nome={info.grupo}
         cidade={info.pix_cidade ?? null}
         valor={info.valor ? Number(info.valor) : null}
-        descricao={info.descricao ?? null}
+        descricao={primeiraLinha(info.descricao) || null}
         titulo="Pagar com Pix"
       />
 
@@ -99,7 +100,9 @@ function Moldura({
             {titulo}
           </h1>
           {subtitulo && (
-            <p className="mb-4 text-center text-sm text-slate-500">
+            // whitespace-pre-line: o administrador escreveu em varias linhas e
+            // e assim que precisa aparecer.
+            <p className="mb-4 whitespace-pre-line text-center text-sm text-slate-600">
               {subtitulo}
             </p>
           )}

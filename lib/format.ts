@@ -106,3 +106,9 @@ export const SIGNUP_SPORTS: string[] = [
   "Vôlei",
   "Futevôlei",
 ];
+
+// Textos que o usuário escreve em várias linhas (observação da cobrança, por
+// exemplo). Em título, endereço e no código do Pix cabe só a primeira.
+export function primeiraLinha(texto: string | null | undefined): string {
+  return (texto ?? "").split("\n")[0].trim();
+}

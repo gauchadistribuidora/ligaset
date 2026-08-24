@@ -26,9 +26,11 @@ function limpar(texto: string, maximo: number): string {
   return (texto || "")
     .normalize("NFD")
     .replace(/[̀-ͯ]/g, "")
-    .replace(/[^A-Za-z0-9 ]/g, "")
+    .replace(/[^A-Za-z0-9 ]/g, " ")
+    .replace(/\s+/g, " ")
     .trim()
-    .slice(0, maximo);
+    .slice(0, maximo)
+    .trim();
 }
 
 // Onze dígitos podem ser CPF ou celular com DDD — por isso o tipo é escolhido
