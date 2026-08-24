@@ -9,22 +9,34 @@ export type FinanceSummary = {
   overdueCount: number;
   pendingAmount: number;
   expenses: any[];
+  // Entradas lancadas na mao (rifa, patrocinio). Somam com as mensalidades.
+  totalRevenues: number;
+  revenues: any[];
 };
 
 export async function financeSummary(
   supabase: any,
   groupId: string
 ): Promise<FinanceSummary> {
-  const [{ data: group }, { data: payments }, { data: expenses }] =
-    await Promise.all([
-      supabase.from("groups").select("name").eq("id", groupId).single(),
-      supabase.from("payments").select("amount, status").eq("group_id", groupId),
-      supabase
-        .from("expenses")
-        .select("description, amount, expense_date, category")
-        .eq("group_id", groupId)
-        .order("expense_date", { ascending: false }),
-    ]);
+  const [
+    { data: group },
+    { data: payments },
+    { data: expenses },
+    { data: revenues },
+  ] = await Promise.all([
+    supabase.from("groups").select("name").eq("id", groupId).single(),
+    supabase.from("payments").select("amount, status").eq("group_id", groupId),
+    supabase
+      .from("expenses")
+      .select("description, amount, expense_date, category")
+      .eq("group_id", groupId)
+      .order("expense_date", { ascending: false }),
+    supabase
+      .from("revenues")
+      .select("description, amount, revenue_date, category")
+      .eq("group_id", groupId)
+      .order("revenue_date", { ascending: false }),
+  ]);
 
   const pays = payments ?? [];
   const exps = expenses ?? [];
@@ -42,16 +54,23 @@ export async function financeSummary(
     (s: number, e: any) => s + Number(e.amount),
     0
   );
+  const revs = revenues ?? [];
+  const totalRevenues = revs.reduce(
+    (s: number, r: any) => s + Number(r.amount),
+    0
+  );
 
   return {
     groupName: group?.name ?? "Grupo",
-    received,
+    received: received + totalRevenues,
     totalExpenses,
-    saldo: received - totalExpenses,
+    saldo: received + totalRevenues - totalExpenses,
     pendingCount: pays.filter((p: any) => p.status === "pending").length,
     overdueCount: pays.filter((p: any) => p.status === "overdue").length,
     pendingAmount,
     expenses: exps,
+    totalRevenues,
+    revenues: revs,
   };
 }
 

@@ -6,6 +6,8 @@ import AddPaymentForm from "@/components/AddPaymentForm";
 import PaymentRow from "@/components/PaymentRow";
 import ExpenseForm from "@/components/ExpenseForm";
 import ExpenseRow from "@/components/ExpenseRow";
+import RevenueForm from "@/components/RevenueForm";
+import RevenueRow from "@/components/RevenueRow";
 import PixQR from "@/components/PixQR";
 import CobrancaPorLink from "@/components/CobrancaPorLink";
 
@@ -45,6 +47,16 @@ export default async function PaymentsPage({
     lancador: umSo(e.lancador),
   }));
 
+  const { data: revenues } = await supabase
+    .from("revenues")
+    .select("*, lancador:profiles!revenues_created_by_fkey(full_name)")
+    .eq("group_id", id)
+    .order("revenue_date", { ascending: false });
+  const revenueRows = ((revenues ?? []) as any[]).map((r) => ({
+    ...r,
+    lancador: umSo(r.lancador),
+  }));
+
   // jogadores do grupo (para a cobrança avulsa)
   const { data: members } = isAdmin
     ? await supabase
@@ -76,7 +88,9 @@ export default async function PaymentsPage({
   const pending = rows.filter((p) => p.status === "pending").length;
   const overdue = rows.filter((p) => p.status === "overdue").length;
   const totalExpenses = expenseRows.reduce((s, e) => s + Number(e.amount), 0);
-  const saldo = received - totalExpenses;
+  // Receita lançada na mão soma com o que veio das mensalidades.
+  const totalRevenues = revenueRows.reduce((s, r) => s + Number(r.amount), 0);
+  const saldo = received + totalRevenues - totalExpenses;
 
   // ---- Resumo do mês corrente ----
   // Entrada conta pela data do pagamento; saída, pela data da despesa. O saldo
@@ -84,15 +98,23 @@ export default async function PaymentsPage({
   const mesAtual = new Date().toISOString().slice(0, 7);
   const pagos = rows.filter((p) => p.status === "paid");
 
-  const entradasMes = pagos
-    .filter((p) => mesDe(p.paid_at ?? p.reference_month) === mesAtual)
-    .reduce((s, p) => s + Number(p.amount), 0);
+  const entradasMes =
+    pagos
+      .filter((p) => mesDe(p.paid_at ?? p.reference_month) === mesAtual)
+      .reduce((s, p) => s + Number(p.amount), 0) +
+    revenueRows
+      .filter((r) => mesDe(r.revenue_date) === mesAtual)
+      .reduce((s, r) => s + Number(r.amount), 0);
   const saidasMes = expenseRows
     .filter((e) => mesDe(e.expense_date) === mesAtual)
     .reduce((s, e) => s + Number(e.amount), 0);
-  const entradasAntes = pagos
-    .filter((p) => mesDe(p.paid_at ?? p.reference_month) < mesAtual)
-    .reduce((s, p) => s + Number(p.amount), 0);
+  const entradasAntes =
+    pagos
+      .filter((p) => mesDe(p.paid_at ?? p.reference_month) < mesAtual)
+      .reduce((s, p) => s + Number(p.amount), 0) +
+    revenueRows
+      .filter((r) => mesDe(r.revenue_date) < mesAtual)
+      .reduce((s, r) => s + Number(r.amount), 0);
   const saidasAntes = expenseRows
     .filter((e) => mesDe(e.expense_date) < mesAtual)
     .reduce((s, e) => s + Number(e.amount), 0);
@@ -150,7 +172,7 @@ export default async function PaymentsPage({
       <div className="grid grid-cols-3 gap-3">
         <Stat
           label="Arrecadado"
-          value={brl(received)}
+          value={brl(received + totalRevenues)}
           valueClassName="text-sm leading-tight tabular-nums sm:text-lg"
         />
         <Stat
@@ -229,7 +251,27 @@ export default async function PaymentsPage({
       )}
 
       <section>
-        <h3 className="mb-2 font-bold text-slate-800">💸 Despesas</h3>
+        <h3 className="mb-2 font-bold text-slate-800">💰 Receitas</h3>
+        {isAdmin && <RevenueForm groupId={id} />}
+        {revenueRows.length ? (
+          <div className="mt-2 divide-y divide-slate-100 overflow-hidden rounded-2xl bg-white shadow-card">
+            {revenueRows.map((r) => (
+              <RevenueRow
+                key={r.id}
+                groupId={id}
+                revenue={r}
+                canManage={isAdmin}
+              />
+            ))}
+          </div>
+        ) : (
+          <p className="px-1 py-2 text-sm text-slate-400">
+            Nenhuma receita lançada à mão. Mensalidades e cobranças entram
+            sozinhas.
+          </p>
+        )}
+
+        <h3 className="!mt-6 mb-2 font-bold text-slate-800">💸 Despesas</h3>
         {isAdmin && <ExpenseForm groupId={id} />}
         {expenseRows.length > 0 ? (
           <div className="card mt-2 divide-y divide-slate-100 !p-0">

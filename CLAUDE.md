@@ -148,6 +148,15 @@ na lista. O bloco de Duplas (Manual e Jogo/Treino) mostra quantas estão pendent
 os nomes e um botão. É idempotente: compara o par ordenado com os times existentes,
 então clicar duas vezes não duplica.
 
+### Receita lancada na mao
+Tabela `revenues`, espelho de `expenses` (mesma RLS: membro ve, admin mexe). E o que
+entra sem passar pela mensalidade — rifa, patrocinio, venda de camiseta. Soma no
+"Arrecadado", no saldo e no resumo do mes, junto com `payments` pagos; `lib/finance.ts`
+ja devolve `totalRevenues` para o relatorio nao divergir da tela.
+
+`components/CategoriaPicker.tsx` guarda as listas de categoria de receita e despesa,
+com a opcao "Outra (escrever)" para o que nao estiver previsto.
+
 ### Cobranca por link
 Botao no financeiro gera `/cobrar/<codigo>` (`charge_links` + `public_charge_info`):
 valor opcional — em branco, quem paga digita. A pagina publica mostra o QR e o copia

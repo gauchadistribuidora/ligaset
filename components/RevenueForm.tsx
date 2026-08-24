@@ -1,10 +1,12 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { addExpense } from "@/app/actions/finance";
-import CategoriaPicker, { CATEGORIAS_DESPESA } from "./CategoriaPicker";
+import { addRevenue } from "@/app/actions/finance";
+import CategoriaPicker, { CATEGORIAS_RECEITA } from "./CategoriaPicker";
 
-export default function ExpenseForm({ groupId }: { groupId: string }) {
+// Entrada de dinheiro que não passa pela mensalidade: rifa, patrocínio, venda
+// de camiseta, acerto de quadra em espécie.
+export default function RevenueForm({ groupId }: { groupId: string }) {
   const [open, setOpen] = useState(false);
   const [pending, start] = useTransition();
   const [msg, setMsg] = useState<{ ok?: boolean; error?: string } | null>(null);
@@ -12,31 +14,31 @@ export default function ExpenseForm({ groupId }: { groupId: string }) {
   function onSubmit(formData: FormData) {
     setMsg(null);
     start(async () => {
-      const res = await addExpense(groupId, formData);
+      const res = await addRevenue(groupId, formData);
       setMsg(res);
       if (res?.ok)
-        (document.getElementById("expense-form") as HTMLFormElement)?.reset();
+        (document.getElementById("revenue-form") as HTMLFormElement)?.reset();
     });
   }
 
   if (!open) {
     return (
       <button onClick={() => setOpen(true)} className="btn-ghost w-full">
-        ＋ Adicionar despesa
+        ＋ Adicionar receita
       </button>
     );
   }
 
   return (
     <div className="card space-y-3">
-      <p className="text-sm font-semibold text-slate-700">Nova despesa</p>
-      <form id="expense-form" action={onSubmit} className="space-y-3">
+      <p className="text-sm font-semibold text-slate-700">Nova receita</p>
+      <form id="revenue-form" action={onSubmit} className="space-y-3">
         <div>
           <label className="label">Descrição *</label>
           <input
             name="description"
             required
-            placeholder="Ex: Aluguel da quadra, bolas, luz"
+            placeholder="Ex: Rifa da camiseta, patrocínio do mês"
             className="input"
           />
         </div>
@@ -55,21 +57,27 @@ export default function ExpenseForm({ groupId }: { groupId: string }) {
           </div>
           <div>
             <label className="label">Data</label>
-            <input name="expense_date" type="date" className="input" />
+            <input name="revenue_date" type="date" className="input" />
           </div>
         </div>
-        <CategoriaPicker name="category" opcoes={CATEGORIAS_DESPESA} />
+
+        <CategoriaPicker name="category" opcoes={CATEGORIAS_RECEITA} />
+
         <div className="flex gap-2">
           <button disabled={pending} className="btn-primary flex-1">
-            {pending ? "Salvando..." : "Adicionar despesa"}
+            {pending ? "Salvando..." : "Adicionar receita"}
           </button>
-          <button type="button" onClick={() => setOpen(false)} className="btn-ghost">
+          <button
+            type="button"
+            onClick={() => setOpen(false)}
+            className="btn-ghost"
+          >
             Fechar
           </button>
         </div>
       </form>
       {msg?.error && <p className="text-sm text-rose-500">{msg.error}</p>}
-      {msg?.ok && <p className="text-sm text-court-600">Despesa adicionada! ✓</p>}
+      {msg?.ok && <p className="text-sm text-court-600">Receita adicionada! ✓</p>}
     </div>
   );
 }
