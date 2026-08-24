@@ -3,6 +3,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { brl, shortDate } from "@/lib/format";
 import ConviteConfirm from "@/components/ConviteConfirm";
+import PixQR from "@/components/PixQR";
 
 export const dynamic = "force-dynamic";
 
@@ -101,11 +102,17 @@ export default async function ConvitePage({
       </div>
 
       {info.pix && (
-        <p className="mt-3 text-xs text-slate-500">
-          Confirme a presença e faça o Pix
-          {info.valor ? ` de ${brl(Number(info.valor))}` : ""} para a chave
-          acima.
-        </p>
+        <div className="mt-4">
+          <PixQR
+            chave={info.pix}
+            tipo={info.pix_tipo ?? null}
+            nome={info.grupo}
+            cidade={info.pix_cidade ?? null}
+            valor={info.valor ? Number(info.valor) : null}
+            descricao={info.torneio ?? null}
+            titulo="Pagar a quadra com Pix"
+          />
+        </div>
       )}
 
       <div className="mt-5">

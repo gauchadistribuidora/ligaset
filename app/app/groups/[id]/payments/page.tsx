@@ -6,6 +6,7 @@ import AddPaymentForm from "@/components/AddPaymentForm";
 import PaymentRow from "@/components/PaymentRow";
 import ExpenseForm from "@/components/ExpenseForm";
 import ExpenseRow from "@/components/ExpenseRow";
+import PixQR from "@/components/PixQR";
 
 export const dynamic = "force-dynamic";
 
@@ -18,7 +19,7 @@ export default async function PaymentsPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const { supabase, isAdmin, settings } = await getGroupContext(id);
+  const { supabase, user, group, isAdmin, settings } = await getGroupContext(id);
 
   const { data: payments } = await supabase
     .from("payments")
@@ -52,6 +53,21 @@ export default async function PaymentsPage({
         .eq("status", "active")
         .order("name")
     : { data: [] as any[] };
+
+  // O que EU devo. A cobranca do churrasco carrega o Pix de quem comprou a
+  // carne; o resto vai para a chave do grupo.
+  const { data: euMembro } = await supabase
+    .from("group_members")
+    .select("id")
+    .eq("group_id", id)
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  const minhasAbertas = rows.filter(
+    (p) =>
+      p.member_id === euMembro?.id &&
+      (p.status === "pending" || p.status === "overdue")
+  );
 
   const received = rows
     .filter((p) => p.status === "paid")
@@ -90,6 +106,44 @@ export default async function PaymentsPage({
 
   return (
     <div className="space-y-5">
+      {/* O que eu devo, com o Pix pronto. Vem antes de tudo: e o que a pessoa
+          abriu a tela para resolver. */}
+      {minhasAbertas.length > 0 && settings?.pix_key && (
+        <div className="card space-y-3">
+          <p className="text-sm font-semibold text-slate-700">
+            💸 Você tem {minhasAbertas.length} cobrança(s) em aberto
+          </p>
+          {minhasAbertas.map((p: any) => (
+            <PixQR
+              key={p.id}
+              chave={p.pix_key || settings.pix_key}
+              tipo={p.pix_key ? null : settings.pix_key_type ?? null}
+              nome={group.name}
+              cidade={settings.pix_city ?? null}
+              valor={Number(p.amount)}
+              descricao={
+                p.kind === "churrasco"
+                  ? "Churrasco"
+                  : p.kind === "convidado"
+                  ? "Convidado"
+                  : monthLabel(p.reference_month)
+              }
+              titulo={
+                p.kind === "churrasco"
+                  ? "🍖 Churrasco — pagar com Pix"
+                  : p.kind === "convidado"
+                  ? "🙋 Quadra do convidado — pagar com Pix"
+                  : `Mensalidade ${monthLabel(p.reference_month)}`
+              }
+            />
+          ))}
+          <p className="text-xs text-slate-400">
+            Depois de pagar, o administrador confirma o recebimento e a
+            cobrança sai daqui.
+          </p>
+        </div>
+      )}
+
       <div className="grid grid-cols-3 gap-3">
         <Stat
           label="Arrecadado"

@@ -148,6 +148,18 @@ na lista. O bloco de Duplas (Manual e Jogo/Treino) mostra quantas estão pendent
 os nomes e um botão. É idempotente: compara o par ordenado com os times existentes,
 então clicar duas vezes não duplica.
 
+### QR Code do Pix
+`lib/pix.ts` monta o "copia e cola" (BR Code do Banco Central) e `components/PixQR.tsx`
+desenha o QR com `qrcode-generator`. **Nao ha gateway, taxa nem servico de terceiro** —
+o padrao e aberto e o codigo sai do proprio aparelho. O CRC16-CCITT esta conferido
+contra o vetor canonico (`123456789` -> `29B1`).
+
+**Cuidado com o tipo da chave:** onze digitos podem ser CPF ou celular, e o banco so
+reconhece no formato certo (telefone com `+55`, CPF so digitos). Por isso
+`group_settings.pix_key_type` e explicito; quando fica em branco, o digito verificador
+do CPF desempata. Aparece no convite (`/convite`) e nas cobrancas em aberto do proprio
+atleta (`/payments`), onde a do churrasco usa o Pix de quem comprou a carne.
+
 ### Rateio da carne
 Quem comprou lanca o gasto e o **Pix dele** (`ratearChurrasco`): divide entre todos
 que marcaram o churrasco, nao cobra o comprador (ja pagou) e gera cobranca pendente

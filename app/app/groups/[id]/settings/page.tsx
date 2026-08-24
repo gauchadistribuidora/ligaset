@@ -206,6 +206,37 @@ export default async function SettingsPage({
             className="input"
           />
         </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="label">Tipo da chave</label>
+            <select
+              name="pix_key_type"
+              defaultValue={settings?.pix_key_type ?? ""}
+              className="input"
+            >
+              <option value="">Descobrir sozinho</option>
+              <option value="telefone">Telefone</option>
+              <option value="cpf">CPF</option>
+              <option value="cnpj">CNPJ</option>
+              <option value="email">E-mail</option>
+              <option value="aleatoria">Chave aleatória</option>
+            </select>
+            <p className="mt-1 text-xs text-slate-400">
+              Onze dígitos podem ser CPF ou celular. Dizer o tipo garante que o
+              QR abra certo no banco.
+            </p>
+          </div>
+          <div>
+            <label className="label">Cidade do recebedor</label>
+            <input
+              name="pix_city"
+              defaultValue={settings?.pix_city ?? ""}
+              placeholder="Porto Alegre"
+              className="input"
+            />
+          </div>
+        </div>
       </SaveForm>
     </div>
   );

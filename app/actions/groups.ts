@@ -49,6 +49,9 @@ export async function updateSettings(groupId: string, formData: FormData) {
   const monthly_fee = Number(formData.get("monthly_fee") || 0);
   const due_day = Number(formData.get("due_day") || 10);
   const pix_key = String(formData.get("pix_key") || "").trim() || null;
+  const pix_key_type =
+    String(formData.get("pix_key_type") || "").trim() || null;
+  const pix_city = String(formData.get("pix_city") || "").trim() || null;
   const capacityRaw = String(formData.get("capacity") || "").trim();
   const capacity = capacityRaw ? Math.max(0, Number(capacityRaw)) || null : null;
   const guestRaw = String(formData.get("guest_fee") || "").trim();
@@ -64,6 +67,8 @@ export async function updateSettings(groupId: string, formData: FormData) {
       monthly_fee,
       due_day,
       pix_key,
+      pix_key_type,
+      pix_city,
       capacity,
       guest_fee,
       players_can_score,
