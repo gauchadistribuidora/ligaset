@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 import { useState, useTransition } from "react";
 import { Avatar } from "@/components/ui";
 import ImageUpload from "@/components/ImageUpload";
@@ -66,7 +68,13 @@ export default function MemberRow({
           size={40}
         />
         <div className="min-w-0 flex-1">
-          <p className="truncate font-semibold">{displayName}</p>
+          {/* O nome leva ao perfil: presença, pneus, parcerias e financeiro. */}
+          <Link
+            href={`/app/groups/${groupId}/atleta/${member.id}`}
+            className="truncate font-semibold hover:text-court-600"
+          >
+            {displayName}
+          </Link>
           <p className="truncate text-xs text-slate-400">
             {member.phone || member.email || "sem contato"}
             {linked && " · no app"}

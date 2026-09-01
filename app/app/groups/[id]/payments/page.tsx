@@ -11,6 +11,7 @@ import RevenueRow from "@/components/RevenueRow";
 import PixQR from "@/components/PixQR";
 import CobrancaPorLink from "@/components/CobrancaPorLink";
 import PainelMensalista from "@/components/PainelMensalista";
+import FechamentoDoMes from "@/components/FechamentoDoMes";
 
 export const dynamic = "force-dynamic";
 
@@ -156,6 +157,14 @@ export default async function PaymentsPage({
   });
   const totalAberto = painel.reduce((s: number, l: any) => s + l.emAberto, 0);
 
+  const { data: fechamentos } = isAdmin
+    ? await supabase
+        .from("month_closings")
+        .select("*")
+        .eq("group_id", id)
+        .order("reference_month", { ascending: false })
+    : { data: [] as any[] };
+
   const byMonth: Record<string, any[]> = {};
   for (const p of rows) {
     (byMonth[p.reference_month] ??= []).push(p);
@@ -204,6 +213,20 @@ export default async function PaymentsPage({
 
       {isAdmin && (
         <PainelMensalista linhas={painel} totalAberto={totalAberto} />
+      )}
+
+      {isAdmin && (
+        <FechamentoDoMes
+          groupId={id}
+          mesAtual={mesAtual}
+          previa={{
+            saldoInicial,
+            entradas: entradasMes,
+            saidas: saidasMes,
+            saldoFinal,
+          }}
+          fechamentos={(fechamentos ?? []) as any[]}
+        />
       )}
 
       {isAdmin && <CobrancaPorLink groupId={id} />}

@@ -156,6 +156,22 @@ mensalidade do mes e insere so o resto. **Convidado nao paga mensalidade**
 (`is_guest = false` no filtro): ele entra pelo link de presenca e e cobrado pela
 quadra do dia. Depois de gerar, a mesma tela oferece o link de cobranca do valor.
 
+### Perfil do atleta
+`/app/groups/[id]/atleta/[mid]`: presenca, pneus, com quem mais joga e financeiro
+numa tela so. O bloco financeiro so aparece para o proprio atleta ou para o admin —
+o que o outro deve nao e assunto de terceiro. Chega pelo nome na lista de Membros.
+
+### Fechamento do mes
+`month_closings` congela saldo inicial, entradas, saidas e saldo final do mes. Existe
+porque o relatorio e sempre do momento atual: lancar uma despesa antiga muda o
+passado, e prestacao de contas nao pode mudar. Reabrir apaga o fechamento.
+
+### Enquete do grupo
+`polls` + `poll_votes` na aba Enquetes: o admin cria a pergunta, as opcoes sao os
+atletas e cada um vota em um so (chave primaria `(poll_id, voter_id)` — trocar de
+ideia troca o voto, nao soma outro). Todo mundo ve o resultado; a RLS so aceita voto
+do proprio membro e com a enquete aberta.
+
 ### Painel do mensalista
 No financeiro, `PainelMensalista` mostra quem esta em dia, quem deve, quanto e desde
 quando, com o botao de cobrar os devedores pelo WhatsApp. Convidado nao entra
