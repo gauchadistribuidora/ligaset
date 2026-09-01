@@ -21,6 +21,7 @@ export default function GroupTabs({
     { href: `${base}/members`, label: "Membros" },
     { href: `${base}/payments`, label: "Financeiro" },
     ...(showPneu ? [{ href: `${base}/pneus`, label: "Pneu" }] : []),
+    { href: `${base}/campeoes`, label: "Campeões" },
     { href: `${base}/enquetes`, label: "Enquetes" },
     ...(isAdmin ? [{ href: `${base}/relatorios`, label: "Relatórios" }] : []),
   ];

@@ -156,6 +156,13 @@ mensalidade do mes e insere so o resto. **Convidado nao paga mensalidade**
 (`is_guest = false` no filtro): ele entra pelo link de presenca e e cobrado pela
 quadra do dia. Depois de gerar, a mesma tela oferece o link de cobranca do valor.
 
+### Mural dos campeoes
+Aba **Campeoes**: `champions` guarda titulo, data, categoria e a dupla. O campeao pode
+ser **membro** (`member1_id`, vira link para o perfil) **ou nome escrito a mao**
+(`nome1`) — quem jogou antes do app nunca teve cadastro, e sem isso metade da
+historia do grupo ficaria de fora. Um CHECK garante que todo titulo tem alguem.
+Agrupado por ano, com ranking de quem mais levantou taca. Admin cadastra, todo mundo ve.
+
 ### Categorias do financeiro
 As do app ficam em `lib/categorias.ts`; as do grupo em `finance_categories`
 (admin escreve, membro le). Aparecem juntas no seletor, as do grupo sob "Do seu
