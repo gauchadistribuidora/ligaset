@@ -156,6 +156,13 @@ mensalidade do mes e insere so o resto. **Convidado nao paga mensalidade**
 (`is_guest = false` no filtro): ele entra pelo link de presenca e e cobrado pela
 quadra do dia. Depois de gerar, a mesma tela oferece o link de cobranca do valor.
 
+### Resumo publico do jogo
+`/resumo/<confirm_code>` (`public_tournament_summary`): mesma info do relatorio, em
+pagina aberta e so leitura, com `generateMetadata` colocando os numeros na previa do
+WhatsApp (confirmados, duplas, churrasco, sem responder). Funciona **mesmo com a lista
+fechada** — depois do jogo o resumo continua valendo. Devolve so nome e situacao,
+nunca contato.
+
 ### Relatorio do jogo
 `/app/groups/[id]/tournaments/[tid]/relatorio`: duplas formadas, confirmados sem
 dupla, quem fica para o churrasco, falta confirmar e ausentes — com a observacao

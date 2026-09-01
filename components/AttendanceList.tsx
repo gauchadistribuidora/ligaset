@@ -52,7 +52,9 @@ export default function AttendanceList({
 }) {
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
-  const [copied, setCopied] = useState<"lista" | "convite" | null>(null);
+  const [copied, setCopied] = useState<
+    "lista" | "convite" | "resumo" | null
+  >(null);
   const [codigoConvite, setCodigoConvite] = useState(guestCode);
   const [vagas, setVagas] = useState(capacity);
   const [editandoVagas, setEditandoVagas] = useState(false);
@@ -190,6 +192,8 @@ export default function AttendanceList({
   const origem = typeof window !== "undefined" ? window.location.origin : "";
   const publicLink = confirmCode ? `${origem}/jogo/${confirmCode}` : null;
   const conviteLink = codigoConvite ? `${origem}/convite/${codigoConvite}` : null;
+  // Página aberta, só leitura: quem recebe vê tudo sem poder mexer.
+  const resumoLink = confirmCode ? `${origem}/resumo/${confirmCode}` : null;
 
   const marcarChurrasco = (memberId: string, sim: boolean) => {
     setError(null);
@@ -520,16 +524,48 @@ Pix: ${
         </a>
       )}
 
-      <a
-        href={`https://wa.me/?text=${encodeURIComponent(
-          montarResumo(publicLink)
-        )}`}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="btn-ghost w-full !py-2 text-sm"
-      >
-        📋 Resumo do jogo para o grupo
-      </a>
+      {resumoLink && (
+        <div className="rounded-xl bg-court-50 p-3">
+          <p className="text-xs font-semibold text-slate-600">
+            📋 Link do resumo do jogo
+          </p>
+          <p className="mt-1 break-all text-xs text-slate-500">{resumoLink}</p>
+          <div className="mt-2 flex flex-wrap items-center gap-3">
+            <button
+              onClick={async () => {
+                try {
+                  await navigator.clipboard.writeText(resumoLink);
+                  setCopied("resumo");
+                  setTimeout(() => setCopied(null), 2500);
+                } catch {
+                  setError("Não consegui copiar. Copie o link na mão.");
+                }
+              }}
+              className="text-xs font-bold text-court-600"
+            >
+              {copied === "resumo" ? "Copiado! ✓" : "Copiar link"}
+            </button>
+            <a
+              href={`https://wa.me/?text=${encodeURIComponent(resumoLink)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs font-bold text-court-600"
+            >
+              WhatsApp
+            </a>
+            <a
+              href={`https://wa.me/?text=${encodeURIComponent(
+                montarResumo(publicLink)
+              )}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs font-bold text-slate-500"
+            >
+              Mandar em texto
+            </a>
+          </div>
+        </div>
+      )}
 
       {publicLink && (
         <div className="rounded-xl bg-ocean-900/5 p-3">
