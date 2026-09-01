@@ -6,7 +6,13 @@ import CategoriaPicker, { CATEGORIAS_RECEITA } from "./CategoriaPicker";
 
 // Entrada de dinheiro que não passa pela mensalidade: rifa, patrocínio, venda
 // de camiseta, acerto de quadra em espécie.
-export default function RevenueForm({ groupId }: { groupId: string }) {
+export default function RevenueForm({
+  groupId,
+  extras = [],
+}: {
+  groupId: string;
+  extras?: string[];
+}) {
   const [open, setOpen] = useState(false);
   const [pending, start] = useTransition();
   const [msg, setMsg] = useState<{ ok?: boolean; error?: string } | null>(null);
@@ -61,7 +67,7 @@ export default function RevenueForm({ groupId }: { groupId: string }) {
           </div>
         </div>
 
-        <CategoriaPicker name="category" opcoes={CATEGORIAS_RECEITA} />
+        <CategoriaPicker name="category" opcoes={CATEGORIAS_RECEITA} extras={extras} />
 
         <div className="flex gap-2">
           <button disabled={pending} className="btn-primary flex-1">

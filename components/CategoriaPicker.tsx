@@ -1,38 +1,23 @@
 "use client";
 
 import { useState } from "react";
+import {
+  CATEGORIAS_DESPESA,
+  CATEGORIAS_RECEITA,
+} from "@/lib/categorias";
 
-// Categorias que se repetem toda vez. A lista poupa digitação, e a opção
-// "Outra" mantém o campo livre para o que não estiver previsto.
-export const CATEGORIAS_RECEITA = [
-  "Mensalidade",
-  "Diária / avulso",
-  "Convidado",
-  "Churrasco",
-  "Inscrição de torneio",
-  "Patrocínio",
-  "Rifa / sorteio",
-  "Venda de material",
-];
-
-export const CATEGORIAS_DESPESA = [
-  "Aluguel da quadra",
-  "Bolas",
-  "Material",
-  "Premiação",
-  "Churrasco / bebidas",
-  "Professor",
-  "Manutenção",
-  "Taxas",
-];
+export { CATEGORIAS_DESPESA, CATEGORIAS_RECEITA };
 
 export default function CategoriaPicker({
   name,
   opcoes,
+  extras = [],
   label = "Categoria",
 }: {
   name: string;
   opcoes: string[];
+  // Categorias que o proprio grupo cadastrou.
+  extras?: string[];
   label?: string;
 }) {
   const [outra, setOutra] = useState(false);
@@ -72,6 +57,15 @@ export default function CategoriaPicker({
               {o}
             </option>
           ))}
+          {extras.length > 0 && (
+            <optgroup label="Do seu grupo">
+              {extras.map((o) => (
+                <option key={o} value={o}>
+                  {o}
+                </option>
+              ))}
+            </optgroup>
+          )}
           <option value="__outra__">Outra (escrever)...</option>
         </select>
       )}

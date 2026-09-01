@@ -4,7 +4,13 @@ import { useState, useTransition } from "react";
 import { addExpense } from "@/app/actions/finance";
 import CategoriaPicker, { CATEGORIAS_DESPESA } from "./CategoriaPicker";
 
-export default function ExpenseForm({ groupId }: { groupId: string }) {
+export default function ExpenseForm({
+  groupId,
+  extras = [],
+}: {
+  groupId: string;
+  extras?: string[];
+}) {
   const [open, setOpen] = useState(false);
   const [pending, start] = useTransition();
   const [msg, setMsg] = useState<{ ok?: boolean; error?: string } | null>(null);
@@ -58,7 +64,7 @@ export default function ExpenseForm({ groupId }: { groupId: string }) {
             <input name="expense_date" type="date" className="input" />
           </div>
         </div>
-        <CategoriaPicker name="category" opcoes={CATEGORIAS_DESPESA} />
+        <CategoriaPicker name="category" opcoes={CATEGORIAS_DESPESA} extras={extras} />
         <div className="flex gap-2">
           <button disabled={pending} className="btn-primary flex-1">
             {pending ? "Salvando..." : "Adicionar despesa"}

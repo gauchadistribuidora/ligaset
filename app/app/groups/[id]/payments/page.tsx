@@ -12,6 +12,7 @@ import PixQR from "@/components/PixQR";
 import CobrancaPorLink from "@/components/CobrancaPorLink";
 import PainelMensalista from "@/components/PainelMensalista";
 import FechamentoDoMes from "@/components/FechamentoDoMes";
+import GerenciarCategorias from "@/components/GerenciarCategorias";
 
 export const dynamic = "force-dynamic";
 
@@ -165,6 +166,18 @@ export default async function PaymentsPage({
         .order("reference_month", { ascending: false })
     : { data: [] as any[] };
 
+  const { data: categorias } = await supabase
+    .from("finance_categories")
+    .select("id, kind, name")
+    .eq("group_id", id)
+    .order("name");
+  const catReceita = (categorias ?? [])
+    .filter((c: any) => c.kind === "receita")
+    .map((c: any) => c.name);
+  const catDespesa = (categorias ?? [])
+    .filter((c: any) => c.kind === "despesa")
+    .map((c: any) => c.name);
+
   const byMonth: Record<string, any[]> = {};
   for (const p of rows) {
     (byMonth[p.reference_month] ??= []).push(p);
@@ -226,6 +239,13 @@ export default async function PaymentsPage({
             saldoFinal,
           }}
           fechamentos={(fechamentos ?? []) as any[]}
+        />
+      )}
+
+      {isAdmin && (
+        <GerenciarCategorias
+          groupId={id}
+          categorias={(categorias ?? []) as any[]}
         />
       )}
 
@@ -314,7 +334,7 @@ export default async function PaymentsPage({
 
       <section>
         <h3 className="mb-2 font-bold text-slate-800">💰 Receitas</h3>
-        {isAdmin && <RevenueForm groupId={id} />}
+        {isAdmin && <RevenueForm groupId={id} extras={catReceita} />}
         {revenueRows.length ? (
           <div className="mt-2 divide-y divide-slate-100 overflow-hidden rounded-2xl bg-white shadow-card">
             {revenueRows.map((r) => (
@@ -334,7 +354,7 @@ export default async function PaymentsPage({
         )}
 
         <h3 className="!mt-6 mb-2 font-bold text-slate-800">💸 Despesas</h3>
-        {isAdmin && <ExpenseForm groupId={id} />}
+        {isAdmin && <ExpenseForm groupId={id} extras={catDespesa} />}
         {expenseRows.length > 0 ? (
           <div className="card mt-2 divide-y divide-slate-100 !p-0">
             {expenseRows.map((e) => (

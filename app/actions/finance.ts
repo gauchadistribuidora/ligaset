@@ -3,6 +3,69 @@
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { financeSummary, financeReportHtml } from "@/lib/finance";
+import { CATEGORIAS_DESPESA, CATEGORIAS_RECEITA } from "@/lib/categorias";
+
+// Categoria nova entra no cadastro do grupo assim que e usada — "acrescentar"
+// acontece usando, sem precisar abrir outra tela. So admin escreve (RLS), entao
+// se um jogador comum digitar algo o lancamento passa e a categoria nao entra.
+async function registrarCategoria(
+  supabase: any,
+  groupId: string,
+  kind: "receita" | "despesa",
+  nome: string | null,
+  padroes: string[],
+  userId?: string
+) {
+  if (!nome) return;
+  const jaEPadrao = padroes.some(
+    (p) => p.toLowerCase() === nome.toLowerCase()
+  );
+  if (jaEPadrao) return;
+
+  await supabase
+    .from("finance_categories")
+    .insert({ group_id: groupId, kind, name: nome, created_by: userId ?? null });
+}
+
+export async function excluirCategoria(groupId: string, id: string) {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("finance_categories")
+    .delete()
+    .eq("id", id)
+    .eq("group_id", groupId);
+  if (error) return { error: error.message };
+  revalidatePath(`/app/groups/${groupId}/payments`);
+  revalidatePath(`/app/groups/${groupId}/settings`);
+  return { ok: true };
+}
+
+export async function adicionarCategoria(
+  groupId: string,
+  kind: "receita" | "despesa",
+  nome: string
+) {
+  const supabase = await createClient();
+  const limpo = nome.trim();
+  if (limpo.length < 2) return { error: "Escreva o nome da categoria." };
+  if (limpo.length > 40) return { error: "Nome muito longo." };
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const { error } = await supabase
+    .from("finance_categories")
+    .insert({ group_id: groupId, kind, name: limpo, created_by: user?.id ?? null });
+  if (error) {
+    if (error.code === "23505") return { error: "Essa categoria já existe." };
+    return { error: error.message };
+  }
+
+  revalidatePath(`/app/groups/${groupId}/payments`);
+  revalidatePath(`/app/groups/${groupId}/settings`);
+  return { ok: true };
+}
 
 // Congela os numeros do mes. O relatorio e sempre do momento atual: lancar uma
 // despesa antiga muda o passado, e prestacao de contas nao pode mudar.
@@ -129,6 +192,16 @@ export async function addRevenue(groupId: string, formData: FormData) {
 
   const { error } = await supabase.from("revenues").insert(row);
   if (error) return { error: error.message };
+
+  await registrarCategoria(
+    supabase,
+    groupId,
+    "receita",
+    category,
+    CATEGORIAS_RECEITA,
+    user?.id
+  );
+
   revalidatePath(`/app/groups/${groupId}/payments`);
   return { ok: true };
 }
@@ -167,6 +240,16 @@ export async function addExpense(groupId: string, formData: FormData) {
 
   const { error } = await supabase.from("expenses").insert(row);
   if (error) return { error: error.message };
+
+  await registrarCategoria(
+    supabase,
+    groupId,
+    "despesa",
+    category,
+    CATEGORIAS_DESPESA,
+    user?.id
+  );
+
   revalidatePath(`/app/groups/${groupId}/payments`);
   return { ok: true };
 }

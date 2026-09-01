@@ -156,6 +156,14 @@ mensalidade do mes e insere so o resto. **Convidado nao paga mensalidade**
 (`is_guest = false` no filtro): ele entra pelo link de presenca e e cobrado pela
 quadra do dia. Depois de gerar, a mesma tela oferece o link de cobranca do valor.
 
+### Categorias do financeiro
+As do app ficam em `lib/categorias.ts`; as do grupo em `finance_categories`
+(admin escreve, membro le). Aparecem juntas no seletor, as do grupo sob "Do seu
+grupo". Escrever em "Outra" **ja cadastra** a categoria — acrescentar acontece
+usando. Indice unico em `lower(name)`: categoria escrita de dois jeitos nunca
+agrupa direito no relatorio. Excluir some da lista, mas lancamento antigo mantem
+o nome que tinha.
+
 ### PDF dos relatorios
 `lib/pdf.ts` + `components/PdfButton.tsx` geram o arquivo direto (jsPDF +
 jspdf-autotable, carregados sob demanda no clique). **Nao existe mais botao de
