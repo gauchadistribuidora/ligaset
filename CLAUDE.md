@@ -156,8 +156,13 @@ mensalidade do mes e insere so o resto. **Convidado nao paga mensalidade**
 (`is_guest = false` no filtro): ele entra pelo link de presenca e e cobrado pela
 quadra do dia. Depois de gerar, a mesma tela oferece o link de cobranca do valor.
 
+### Painel do mensalista
+No financeiro, `PainelMensalista` mostra quem esta em dia, quem deve, quanto e desde
+quando, com o botao de cobrar os devedores pelo WhatsApp. Convidado nao entra
+(`is_guest = false`) — ele paga a quadra do dia, nao mensalidade.
+
 ### Resumo publico do jogo
-`/resumo/<confirm_code>` (`public_tournament_summary`): mesma info do relatorio, em
+`/resumo/<slug>` (aceita tambem o `confirm_code` antigo) (`public_tournament_summary`): mesma info do relatorio, em
 pagina aberta e so leitura, com `generateMetadata` colocando os numeros na previa do
 WhatsApp (confirmados, duplas, churrasco, sem responder). Funciona **mesmo com a lista
 fechada** — depois do jogo o resumo continua valendo. Devolve so nome e situacao,

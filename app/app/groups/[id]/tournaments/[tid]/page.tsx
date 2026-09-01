@@ -243,6 +243,7 @@ export default async function TournamentDetail({
               data: tournament.date ? shortDate(tournament.date) : null,
               local: tournament.location ?? null,
             }}
+            slug={tournament.slug ?? null}
           />
         </div>
       )}

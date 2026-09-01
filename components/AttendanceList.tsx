@@ -30,6 +30,7 @@ export default function AttendanceList({
   churrascoOf,
   hasChurrasco,
   jogo,
+  slug,
 }: {
   groupId: string;
   tournamentId: string;
@@ -49,6 +50,7 @@ export default function AttendanceList({
   churrascoOf: Record<string, boolean>;
   hasChurrasco: boolean;
   jogo: { nome: string; data: string | null; local: string | null };
+  slug: string | null;
 }) {
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -193,7 +195,7 @@ export default function AttendanceList({
   const publicLink = confirmCode ? `${origem}/jogo/${confirmCode}` : null;
   const conviteLink = codigoConvite ? `${origem}/convite/${codigoConvite}` : null;
   // Página aberta, só leitura: quem recebe vê tudo sem poder mexer.
-  const resumoLink = confirmCode ? `${origem}/resumo/${confirmCode}` : null;
+  const resumoLink = slug || confirmCode ? `${origem}/resumo/${slug ?? confirmCode}` : null;
 
   const marcarChurrasco = (memberId: string, sim: boolean) => {
     setError(null);
@@ -527,7 +529,7 @@ Pix: ${
       {resumoLink && (
         <div className="rounded-xl bg-court-50 p-3">
           <p className="text-xs font-semibold text-slate-600">
-            📋 Link do resumo do jogo
+            📋 Resumo das confirmações
           </p>
           <p className="mt-1 break-all text-xs text-slate-500">{resumoLink}</p>
           <div className="mt-2 flex flex-wrap items-center gap-3">

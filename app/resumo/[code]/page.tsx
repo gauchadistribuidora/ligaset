@@ -61,12 +61,16 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { code } = await params;
   const info = await buscar(code);
-  if (!info || info.error) return { title: "Resumo do jogo — Ligaset" };
+  if (!info || info.error) return { title: "Resumo das confirmações — Ligaset" };
 
   const s = separar(info.gente ?? []);
   const confirmados = s.duplas.length * 2 + s.semDupla.length;
 
-  const titulo = `${info.jogo}${info.data ? ` — ${shortDate(info.data)}` : ""}`;
+  // O titulo diz o que e antes de dizer qual jogo: quem recebe no grupo precisa
+  // entender o link sem abrir.
+  const titulo = `Resumo das confirmações — ${info.jogo}${
+    info.data ? ` · ${shortDate(info.data)}` : ""
+  }`;
   const partes = [
     `✅ ${confirmados} confirmados${info.vagas ? ` de ${info.vagas}` : ""}`,
     `🤝 ${s.duplas.length} duplas`,
@@ -195,9 +199,14 @@ export default async function ResumoPage({
         </p>
       </div>
 
-      <Link href={`/jogo/${code}`} className="btn-primary mt-4 block w-full text-center">
-        Confirmar minha presença
-      </Link>
+      {info.codigo_confirmacao && (
+        <Link
+          href={`/jogo/${info.codigo_confirmacao}`}
+          className="btn-primary mt-4 block w-full text-center"
+        >
+          Confirmar minha presença
+        </Link>
+      )}
     </Moldura>
   );
 }
@@ -269,6 +278,9 @@ function Moldura({
           Ligaset
         </p>
         <div className="rounded-2xl bg-white p-5 shadow-card">
+          <p className="text-center text-xs font-bold uppercase tracking-wide text-court-500">
+            Resumo das confirmações
+          </p>
           <h1 className="text-center text-xl font-extrabold text-slate-900">
             {titulo}
           </h1>

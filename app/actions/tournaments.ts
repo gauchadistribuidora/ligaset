@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { shuffle, makePairs, roundRobin } from "@/lib/draw";
 import { buildSingleElim } from "@/lib/bracket";
 import { reiRotationRounds } from "@/lib/rei";
+import { codigoAmigavel } from "@/lib/slug";
 
 export async function createTournament(groupId: string, formData: FormData) {
   const supabase = await createClient();
@@ -28,10 +29,27 @@ export async function createTournament(groupId: string, formData: FormData) {
     data: { user },
   } = await supabase.auth.getUser();
 
+  // Endereco legivel do resumo. O sufixo aleatorio evita que o link vire
+  // adivinhavel — nome bonito nao pode expor a lista de outro grupo.
+  let slug: string | null = null;
+  for (const tam of [4, 5, 8]) {
+    const tentativa = codigoAmigavel(`${name} ${date ?? ""}`, tam);
+    const { data: ocupado } = await supabase
+      .from("tournaments")
+      .select("id")
+      .eq("slug", tentativa)
+      .maybeSingle();
+    if (!ocupado) {
+      slug = tentativa;
+      break;
+    }
+  }
+
   const { data, error } = await supabase
     .from("tournaments")
     .insert({
       group_id: groupId,
+      slug,
       name,
       date,
       location,
@@ -489,6 +507,7 @@ export async function duplicarTorneio(
     .insert({
       ...velho,
       group_id: groupId,
+      slug: codigoAmigavel(`${velho.name} ${novaData ?? ""}`, 5),
       date: novaData || null,
       created_by: user.id,
       status: "draft",

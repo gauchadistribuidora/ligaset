@@ -10,6 +10,7 @@ import RevenueForm from "@/components/RevenueForm";
 import RevenueRow from "@/components/RevenueRow";
 import PixQR from "@/components/PixQR";
 import CobrancaPorLink from "@/components/CobrancaPorLink";
+import PainelMensalista from "@/components/PainelMensalista";
 
 export const dynamic = "force-dynamic";
 
@@ -121,6 +122,40 @@ export default async function PaymentsPage({
   const saldoInicial = entradasAntes - saidasAntes;
   const saldoFinal = saldoInicial + entradasMes - saidasMes;
 
+  // Situacao de cada mensalista: quanto esta em aberto e desde quando.
+  const { data: todosMembros } = isAdmin
+    ? await supabase
+        .from("group_members")
+        .select("id, name")
+        .eq("group_id", id)
+        .eq("status", "active")
+        .eq("is_guest", false)
+        .order("name")
+    : { data: [] as any[] };
+
+  const painel = (todosMembros ?? []).map((m: any) => {
+    const minhas = rows.filter(
+      (p) =>
+        p.member_id === m.id &&
+        (p.status === "pending" || p.status === "overdue")
+    );
+    const pagas = rows
+      .filter((p) => p.member_id === m.id && p.status === "paid")
+      .map((p) => p.paid_at ?? p.reference_month)
+      .sort();
+    const meses = minhas.map((p) => p.reference_month).sort();
+    return {
+      id: m.id,
+      nome: m.name || "Sem nome",
+      emAberto: minhas.reduce((s, p) => s + Number(p.amount), 0),
+      vencidas: minhas.filter((p) => p.status === "overdue").length,
+      pendentes: minhas.filter((p) => p.status === "pending").length,
+      desdeQuando: meses[0] ?? null,
+      ultimoPagamento: pagas[pagas.length - 1] ?? null,
+    };
+  });
+  const totalAberto = painel.reduce((s: number, l: any) => s + l.emAberto, 0);
+
   const byMonth: Record<string, any[]> = {};
   for (const p of rows) {
     (byMonth[p.reference_month] ??= []).push(p);
@@ -165,6 +200,10 @@ export default async function PaymentsPage({
             cobrança sai daqui.
           </p>
         </div>
+      )}
+
+      {isAdmin && (
+        <PainelMensalista linhas={painel} totalAberto={totalAberto} />
       )}
 
       {isAdmin && <CobrancaPorLink groupId={id} />}
