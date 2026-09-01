@@ -212,6 +212,13 @@ dupla, quem fica para o churrasco, falta confirmar e ausentes — com a observac
 pedindo para confirmar presenca e marcar a carne. Tem versao para imprimir e versao
 em texto para o WhatsApp.
 
+### Origem dos recebimentos
+O "Arrecadado" soma dois mundos — cobranca paga (`payments`) e receita lancada a mao
+(`revenues`) — e o relatorio so detalhava o segundo, entao parte do dinheiro aparecia
+sem explicacao. `financeSummary` devolve `recebimentos` (cada cobranca paga com nome,
+tipo e data) e `totalMensalidades`, e o relatorio mostra as duas origens separadas no
+resumo e a lista completa em seguida.
+
 ### Receita lancada na mao
 Tabela `revenues`, espelho de `expenses` (mesma RLS: membro ve, admin mexe). E o que
 entra sem passar pela mensalidade — rifa, patrocinio, venda de camiseta. Soma no

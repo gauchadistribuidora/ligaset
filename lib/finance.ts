@@ -12,6 +12,9 @@ export type FinanceSummary = {
   // Entradas lancadas na mao (rifa, patrocinio). Somam com as mensalidades.
   totalRevenues: number;
   revenues: any[];
+  // De onde veio cada real recebido: mensalidade, convidado, churrasco.
+  recebimentos: any[];
+  totalMensalidades: number;
 };
 
 export async function financeSummary(
@@ -25,7 +28,12 @@ export async function financeSummary(
     { data: revenues },
   ] = await Promise.all([
     supabase.from("groups").select("name").eq("id", groupId).single(),
-    supabase.from("payments").select("amount, status").eq("group_id", groupId),
+    supabase
+      .from("payments")
+      .select(
+        "amount, status, paid_at, reference_month, kind, member:group_members(name)"
+      )
+      .eq("group_id", groupId),
     supabase
       .from("expenses")
       .select("description, amount, expense_date, category")
@@ -54,6 +62,18 @@ export async function financeSummary(
     (s: number, e: any) => s + Number(e.amount),
     0
   );
+  // O "arrecadado" somava dois mundos sem dizer qual era qual: cobranca paga e
+  // receita lancada a mao. Aqui o primeiro vira lista.
+  const umSo = (v: any) => (Array.isArray(v) ? v[0] ?? null : v ?? null);
+  const recebimentos = pays
+    .filter((p: any) => p.status === "paid")
+    .map((p: any) => ({ ...p, member: umSo(p.member) }))
+    .sort((a: any, b: any) =>
+      String(b.paid_at ?? b.reference_month ?? "").localeCompare(
+        String(a.paid_at ?? a.reference_month ?? "")
+      )
+    );
+
   const revs = revenues ?? [];
   const totalRevenues = revs.reduce(
     (s: number, r: any) => s + Number(r.amount),
@@ -71,6 +91,8 @@ export async function financeSummary(
     expenses: exps,
     totalRevenues,
     revenues: revs,
+    recebimentos,
+    totalMensalidades: received,
   };
 }
 

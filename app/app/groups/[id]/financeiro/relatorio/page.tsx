@@ -1,6 +1,6 @@
 import { getGroupContext } from "@/lib/data";
 import { financeSummary } from "@/lib/finance";
-import { brl, shortDate } from "@/lib/format";
+import { brl, monthLabel, shortDate } from "@/lib/format";
 import { PageHeader, Stat } from "@/components/ui";
 import PdfButton from "@/components/PdfButton";
 import { notFound } from "next/navigation";
@@ -45,6 +45,42 @@ export default async function FinanceReportPage({
           {s.pendingCount + s.overdueCount} mensalidade(s) pendente(s)/vencida(s) —{" "}
           {brl(s.pendingAmount)} a receber.
         </p>
+
+        <section>
+          <h3 className="mb-2 font-bold text-slate-800">
+            Recebimentos de cobranças ({s.recebimentos.length})
+          </h3>
+          {s.recebimentos.length ? (
+            <div className="card !p-0">
+              <table className="w-full text-sm">
+                <thead className="text-xs text-slate-400">
+                  <tr className="border-b border-slate-100">
+                    <th className="py-2 pl-4 text-left font-medium">Data</th>
+                    <th className="text-left font-medium">Origem</th>
+                    <th className="py-2 pr-4 text-right font-medium">Valor</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {s.recebimentos.map((p: any, i: number) => (
+                    <tr key={i} className="border-b border-slate-50 last:border-0">
+                      <td className="py-2 pl-4 text-slate-500">
+                        {shortDate(p.paid_at ?? p.reference_month)}
+                      </td>
+                      <td className="text-slate-700">{origem(p)}</td>
+                      <td className="py-2 pr-4 text-right font-semibold text-court-600">
+                        {brl(Number(p.amount))}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <p className="px-1 text-sm text-slate-400">
+              Nenhuma cobrança recebida ainda.
+            </p>
+          )}
+        </section>
 
         <section>
           <h3 className="mb-2 font-bold text-slate-800">Despesas</h3>
@@ -93,7 +129,9 @@ export default async function FinanceReportPage({
                 titulo: "Resumo",
                 colunas: ["Item", "Valor"],
                 linhas: [
-                  ["Arrecadado", brl(s.received)],
+                  ["Arrecadado (total)", brl(s.received)],
+                  ["  de cobranças pagas", brl(s.totalMensalidades)],
+                  ["  de receitas à mão", brl(s.totalRevenues)],
                   ["Despesas", brl(s.totalExpenses)],
                   ["Saldo", brl(s.saldo)],
                   [
@@ -103,6 +141,15 @@ export default async function FinanceReportPage({
                     )})`,
                   ],
                 ],
+              },
+              {
+                titulo: `Recebimentos de cobranças (${s.recebimentos.length})`,
+                colunas: ["Data", "Origem", "Valor"],
+                linhas: s.recebimentos.map((p: any) => [
+                  shortDate(p.paid_at ?? p.reference_month),
+                  origem(p),
+                  brl(Number(p.amount)),
+                ]),
               },
               {
                 titulo: "Receitas lançadas à mão",
@@ -130,4 +177,12 @@ export default async function FinanceReportPage({
       </div>
     </div>
   );
+}
+
+// Cobranca paga: de onde veio o dinheiro.
+function origem(p: any) {
+  const nome = p.member?.name || "Atleta";
+  if (p.kind === "churrasco") return `${nome} — churrasco`;
+  if (p.kind === "convidado") return `${nome} — quadra de convidado`;
+  return `${nome} — mensalidade ${monthLabel(p.reference_month)}`;
 }
