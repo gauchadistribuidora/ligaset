@@ -2,7 +2,7 @@ import { getGroupContext } from "@/lib/data";
 import { financeSummary } from "@/lib/finance";
 import { brl, shortDate } from "@/lib/format";
 import { PageHeader, Stat } from "@/components/ui";
-import PrintButton from "@/components/PrintButton";
+import PdfButton from "@/components/PdfButton";
 import { notFound } from "next/navigation";
 
 export default async function FinanceReportPage({
@@ -83,7 +83,50 @@ export default async function FinanceReportPage({
       </div>
 
       <div className="no-print space-y-2">
-        <PrintButton />
+        <PdfButton
+          dados={{
+            titulo: "Relatório financeiro",
+            subtitulo: s.groupName,
+            arquivo: `financeiro-${s.groupName}`,
+            secoes: [
+              {
+                titulo: "Resumo",
+                colunas: ["Item", "Valor"],
+                linhas: [
+                  ["Arrecadado", brl(s.received)],
+                  ["Despesas", brl(s.totalExpenses)],
+                  ["Saldo", brl(s.saldo)],
+                  [
+                    "Pendentes / vencidas",
+                    `${s.pendingCount + s.overdueCount} (${brl(
+                      s.pendingAmount
+                    )})`,
+                  ],
+                ],
+              },
+              {
+                titulo: "Receitas lançadas à mão",
+                colunas: ["Data", "Descrição", "Categoria", "Valor"],
+                linhas: (s.revenues ?? []).map((r: any) => [
+                  shortDate(r.revenue_date),
+                  r.description,
+                  r.category ?? "",
+                  brl(Number(r.amount)),
+                ]),
+              },
+              {
+                titulo: "Despesas",
+                colunas: ["Data", "Descrição", "Categoria", "Valor"],
+                linhas: (s.expenses ?? []).map((e: any) => [
+                  shortDate(e.expense_date),
+                  e.description,
+                  e.category ?? "",
+                  brl(Number(e.amount)),
+                ]),
+              },
+            ],
+          }}
+        />
       </div>
     </div>
   );

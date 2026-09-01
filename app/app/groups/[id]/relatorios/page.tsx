@@ -17,7 +17,7 @@ export default async function ReportsIndex({
     <div>
       <PageHeader title="Relatórios" back={`/app/groups/${id}`} />
       <p className="mb-3 text-sm text-slate-500">
-        Cada relatório abre com opção de <strong>Imprimir/PDF</strong> e{" "}
+        Cada relatório abre com opção de <strong>gerar PDF</strong> e{" "}
         <strong>baixar em Excel</strong>.
       </p>
       <div className="grid gap-3">

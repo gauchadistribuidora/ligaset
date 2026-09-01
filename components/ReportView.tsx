@@ -1,5 +1,7 @@
 "use client";
 
+import PdfButton from "./PdfButton";
+
 export type ReportColumn = {
   key: string;
   label: string;
@@ -60,79 +62,32 @@ export default function ReportView({
     XLSX.writeFile(wb, `${slug(title)}.xlsx`);
   }
 
-  function printReport() {
-    const w = window.open("", "_blank", "width=900,height=700");
-    if (!w) return;
-    const esc = (v: any) =>
-      String(v ?? "")
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;");
-    const secHtml = sections
-      .map((sec) => {
-        const head = sec.columns
-          .map(
-            (c) =>
-              `<th style="text-align:${c.align || "left"}">${esc(c.label)}</th>`
-          )
-          .join("");
-        const body = sec.rows
-          .map(
-            (r) =>
-              "<tr>" +
-              sec.columns
-                .map(
-                  (c) =>
-                    `<td style="text-align:${c.align || "left"}">${esc(
-                      r[c.key]
-                    )}</td>`
-                )
-                .join("") +
-              "</tr>"
-          )
-          .join("");
-        return `${sec.title ? `<h2>${esc(sec.title)}</h2>` : ""}<table><thead><tr>${head}</tr></thead><tbody>${
-          body || `<tr><td colspan="${sec.columns.length}">Sem dados.</td></tr>`
-        }</tbody></table>`;
-      })
-      .join("");
-    w.document.write(`<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>${esc(
-      title
-    )}</title><style>
-      *{font-family:Arial,Helvetica,sans-serif;}
-      body{margin:24px;color:#0f172a;}
-      h1{font-size:20px;margin:0 0 2px;}
-      h2{font-size:15px;margin:18px 0 6px;}
-      .meta{color:#64748b;font-size:12px;margin-bottom:12px;}
-      table{width:100%;border-collapse:collapse;margin-bottom:8px;font-size:12px;}
-      th,td{border:1px solid #e2e8f0;padding:6px 8px;}
-      th{background:#f1f5f9;}
-      tr:nth-child(even) td{background:#f8fafc;}
-      @media print{.noprint{display:none;}}
-    </style></head><body>
-      <h1>${esc(title)}</h1>
-      <div class="meta">${groupName ? esc(groupName) + " • " : ""}${esc(
-      subtitle || ""
-    )}${subtitle ? " • " : ""}Gerado em ${esc(stamp)}</div>
-      ${secHtml}
-      <script>window.onload=function(){setTimeout(function(){window.print();},250);}</script>
-    </body></html>`);
-    w.document.close();
-  }
-
   return (
     <div>
       <div className="mb-4 flex flex-wrap gap-2">
-        <button onClick={printReport} className="btn-dark !py-2 text-sm">
-          🖨️ Imprimir / PDF
-        </button>
+        <PdfButton
+          dados={{
+            titulo: title,
+            subtitulo: [groupName, subtitle].filter(Boolean).join(" • "),
+            arquivo: slug(title),
+            secoes: sections.map((sec) => ({
+              titulo: sec.title,
+              colunas: sec.columns.map((c) => c.label),
+              linhas: sec.rows.map((r) =>
+                sec.columns.map((c) => r[c.key] ?? "")
+              ),
+            })),
+          }}
+          rotulo="📄 Gerar PDF"
+          className="btn-dark !py-2 text-sm"
+        />
         <button onClick={downloadExcel} className="btn-primary !py-2 text-sm">
           ⬇️ Baixar Excel
         </button>
       </div>
 
       {/* Na tela, cada linha é um cartão: tabela de 5 colunas não cabe no
-          celular e obrigava a rolar de lado. A tabela continua no PDF. */}
+          celular e obrigava a rolar de lado. No PDF a tabela volta. */}
       <div className="space-y-6">
         {sections.map((sec, i) => {
           const [principal, ...demais] = sec.columns;

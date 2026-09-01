@@ -156,6 +156,13 @@ mensalidade do mes e insere so o resto. **Convidado nao paga mensalidade**
 (`is_guest = false` no filtro): ele entra pelo link de presenca e e cobrado pela
 quadra do dia. Depois de gerar, a mesma tela oferece o link de cobranca do valor.
 
+### PDF dos relatorios
+`lib/pdf.ts` + `components/PdfButton.tsx` geram o arquivo direto (jsPDF +
+jspdf-autotable, carregados sob demanda no clique). **Nao existe mais botao de
+imprimir** — o antigo abria a caixa de impressao do navegador. Relatorio novo entrega
+os dados ja estruturados (`secoes` com `colunas`/`linhas` ou `texto`), nunca uma
+captura de tela: o PDF sai com texto selecionavel.
+
 ### Perfil do atleta
 `/app/groups/[id]/atleta/[mid]`: presenca, pneus, com quem mais joga e financeiro
 numa tela so. O bloco financeiro so aparece para o proprio atleta ou para o admin —

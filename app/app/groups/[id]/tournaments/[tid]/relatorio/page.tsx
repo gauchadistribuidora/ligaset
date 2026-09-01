@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { getGroupContext } from "@/lib/data";
 import { shortDate } from "@/lib/format";
 import { PageHeader } from "@/components/ui";
-import PrintButton from "@/components/PrintButton";
+import PdfButton from "@/components/PdfButton";
 import ResumoJogoWhatsApp from "@/components/ResumoJogoWhatsApp";
 
 export const dynamic = "force-dynamic";
@@ -166,7 +166,61 @@ export default async function RelatorioTorneioPage({
           faltaConfirmar={faltaConfirmar.map((p) => p.nome)}
           ausentes={ausentes.map((p) => p.nome)}
         />
-        <PrintButton />
+        <PdfButton
+          dados={{
+            titulo: `${t.name} — resumo das confirmações`,
+            subtitulo: [group.name, t.date ? shortDate(t.date) : null, t.location]
+              .filter(Boolean)
+              .join(" • "),
+            arquivo: `jogo-${t.name}`,
+            secoes: [
+              {
+                titulo: `Duplas confirmadas (${duplas.length})`,
+                colunas: ["#", "Dupla"],
+                linhas: duplas.map((d, i) => [
+                  i + 1,
+                  `${d.a.nome}${d.a.convidado ? " (convidado)" : ""} e ${
+                    d.b.nome
+                  }${d.b.convidado ? " (convidado)" : ""}`,
+                ]),
+              },
+              {
+                titulo: `Confirmados sem dupla (${semDupla.length})`,
+                texto: semDupla.length
+                  ? [semDupla.map((p) => p.nome).join(", ")]
+                  : ["Todo mundo que confirmou já tem dupla."],
+              },
+              ...(t.has_churrasco
+                ? [
+                    {
+                      titulo: `Ficam para o churrasco (${noChurrasco.length})`,
+                      texto: noChurrasco.length
+                        ? [noChurrasco.map((p) => p.nome).join(", ")]
+                        : ["Ninguém marcou o churrasco ainda."],
+                    },
+                  ]
+                : []),
+              {
+                titulo: `Falta confirmar (${faltaConfirmar.length})`,
+                texto: faltaConfirmar.length
+                  ? [faltaConfirmar.map((p) => p.nome).join(", ")]
+                  : ["Todo mundo já respondeu."],
+              },
+              {
+                titulo: `Não vão jogar (${ausentes.length})`,
+                texto: ausentes.length
+                  ? [ausentes.map((p) => p.nome).join(", ")]
+                  : ["Ninguém disse que não vai."],
+              },
+              {
+                titulo: "Observação",
+                texto: [
+                  "Favor confirmar presença no jogo e marcar o ícone da carne se vai ficar para o churrasco.",
+                ],
+              },
+            ],
+          }}
+        />
       </div>
     </div>
   );
