@@ -148,6 +148,20 @@ na lista. O bloco de Duplas (Manual e Jogo/Treino) mostra quantas estão pendent
 os nomes e um botão. É idempotente: compara o par ordenado com os times existentes,
 então clicar duas vezes não duplica.
 
+### Rotina da mensalidade
+`generateMonthlyCharges` **nao usa ON CONFLICT**: o indice unico da mensalidade e
+parcial (`where tournament_id is null`) e o Postgres nao infere conflito por indice
+parcial — usar ON CONFLICT ali quebra o botao inteiro. A acao le quem ja tem a
+mensalidade do mes e insere so o resto. **Convidado nao paga mensalidade**
+(`is_guest = false` no filtro): ele entra pelo link de presenca e e cobrado pela
+quadra do dia. Depois de gerar, a mesma tela oferece o link de cobranca do valor.
+
+### Relatorio do jogo
+`/app/groups/[id]/tournaments/[tid]/relatorio`: duplas formadas, confirmados sem
+dupla, quem fica para o churrasco, falta confirmar e ausentes — com a observacao
+pedindo para confirmar presenca e marcar a carne. Tem versao para imprimir e versao
+em texto para o WhatsApp.
+
 ### Receita lancada na mao
 Tabela `revenues`, espelho de `expenses` (mesma RLS: membro ve, admin mexe). E o que
 entra sem passar pela mensalidade — rifa, patrocinio, venda de camiseta. Soma no

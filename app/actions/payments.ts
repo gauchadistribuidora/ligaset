@@ -23,28 +23,46 @@ export async function generateMonthlyCharges(
   const dueDay = Number(settings?.due_day || 10);
   const dueDate = `${month}-${String(dueDay).padStart(2, "0")}`;
 
+  // Convidado não paga mensalidade: ele entra pelo link de presença e é
+  // cobrado pela quadra do dia.
   const { data: members } = await supabase
     .from("group_members")
     .select("id")
     .eq("group_id", groupId)
-    .eq("status", "active");
+    .eq("status", "active")
+    .eq("is_guest", false);
 
-  const rows = (members ?? []).map((m) => ({
-    group_id: groupId,
-    member_id: m.id,
-    amount,
-    reference_month: referenceMonth,
-    due_date: dueDate,
-    status: "pending" as const,
-  }));
+  // Quem já tem a mensalidade do mês fica de fora. Não dá para usar
+  // ON CONFLICT aqui: o índice único de mensalidade é parcial (só vale quando
+  // a cobrança não é de jogo), e o Postgres não infere conflito por índice
+  // parcial.
+  const { data: existentes } = await supabase
+    .from("payments")
+    .select("member_id")
+    .eq("group_id", groupId)
+    .eq("reference_month", referenceMonth)
+    .is("tournament_id", null);
+  const jaTem = new Set((existentes ?? []).map((p) => p.member_id));
+
+  const rows = (members ?? [])
+    .filter((m) => !jaTem.has(m.id))
+    .map((m) => ({
+      group_id: groupId,
+      member_id: m.id,
+      amount,
+      reference_month: referenceMonth,
+      due_date: dueDate,
+      status: "pending" as const,
+      kind: "mensalidade",
+    }));
 
   if (rows.length) {
-    await supabase.from("payments").upsert(rows, {
-      onConflict: "group_id,member_id,reference_month",
-      ignoreDuplicates: true,
-    });
+    const { error } = await supabase.from("payments").insert(rows);
+    if (error) return { error: error.message };
   }
+
   revalidatePath(`/app/groups/${groupId}/payments`);
+  return { ok: true, criadas: rows.length, valor: amount };
 }
 
 // Inclui UMA cobrança manual para um jogador.

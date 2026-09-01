@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { getGroupContext } from "@/lib/data";
 import { PageHeader, EmptyState } from "@/components/ui";
 import AttendanceList from "@/components/AttendanceList";
@@ -195,6 +196,15 @@ export default async function TournamentDetail({
             </div>
           )}
         </div>
+      )}
+
+      {settings?.confirmations_enabled && (
+        <Link
+          href={`/app/groups/${id}/tournaments/${tid}/relatorio`}
+          className="btn-ghost block w-full !py-2 text-center text-sm"
+        >
+          📋 Relatório do jogo
+        </Link>
       )}
 
       {isAdmin && <RepetirJogo groupId={id} tournamentId={tid} />}
