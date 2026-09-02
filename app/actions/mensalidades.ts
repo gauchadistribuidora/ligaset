@@ -23,7 +23,10 @@ export async function linkDasMensalidades(groupId: string, mes: string) {
     return { error: "Só o dono ou um administrador pode gerar o link." };
   }
 
-  const referenceMonth = `${mes}-01`;
+  // A tela manda o mes ora como "2026-09" (campo de mes), ora como
+  // "2026-09-01" (chave do agrupamento). Aceita os dois.
+  const referenceMonth =
+    mes.length > 7 ? `${mes.slice(0, 7)}-01` : `${mes}-01`;
 
   const { data: existente } = await supabase
     .from("payment_links")
@@ -46,7 +49,10 @@ export async function linkDasMensalidades(groupId: string, mes: string) {
 
   let code = "";
   for (const tam of [4, 5, 8]) {
-    const tentativa = codigoAmigavel(`mensalidade ${mes}`, tam);
+    const tentativa = codigoAmigavel(
+      `mensalidade ${referenceMonth.slice(0, 7)}`,
+      tam
+    );
     const { data: ocupado } = await supabase
       .from("payment_links")
       .select("id")
