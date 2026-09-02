@@ -3,7 +3,7 @@ import { Stat, EmptyState } from "@/components/ui";
 import { brl, monthLabel } from "@/lib/format";
 import GenerateChargesForm from "@/components/GenerateChargesForm";
 import AddPaymentForm from "@/components/AddPaymentForm";
-import PaymentRow from "@/components/PaymentRow";
+import ListaMensalidades from "@/components/ListaMensalidades";
 import ExpenseForm from "@/components/ExpenseForm";
 import ExpenseRow from "@/components/ExpenseRow";
 import RevenueForm from "@/components/RevenueForm";
@@ -378,23 +378,12 @@ export default async function PaymentsPage({
       )}
 
       {months.length ? (
-        months.map((mo) => (
-          <section key={mo}>
-            <h3 className="mb-2 font-bold capitalize text-slate-800">
-              {monthLabel(mo)}
-            </h3>
-            <div className="card divide-y divide-slate-100 !p-0">
-              {byMonth[mo].map((p) => (
-                <PaymentRow
-                  key={p.id}
-                  groupId={id}
-                  payment={p}
-                  canManage={isAdmin}
-                />
-              ))}
-            </div>
-          </section>
-        ))
+        <ListaMensalidades
+          groupId={id}
+          meses={months}
+          porMes={byMonth}
+          canManage={isAdmin}
+        />
       ) : (
         <EmptyState
           icon="💰"
