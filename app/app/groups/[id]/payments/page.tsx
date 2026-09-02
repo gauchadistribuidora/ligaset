@@ -4,6 +4,7 @@ import { brl, monthLabel } from "@/lib/format";
 import GenerateChargesForm from "@/components/GenerateChargesForm";
 import AddPaymentForm from "@/components/AddPaymentForm";
 import ListaMensalidades from "@/components/ListaMensalidades";
+import RelatorioMensalidades from "@/components/RelatorioMensalidades";
 import ExpenseForm from "@/components/ExpenseForm";
 import ExpenseRow from "@/components/ExpenseRow";
 import RevenueForm from "@/components/RevenueForm";
@@ -375,6 +376,15 @@ export default async function PaymentsPage({
 
       {months.length > 0 && (
         <h3 className="!mt-6 px-1 font-bold text-slate-800">🧾 Mensalidades</h3>
+      )}
+
+      {isAdmin && months.length > 0 && (
+        <RelatorioMensalidades
+          grupo={group.name}
+          meses={months}
+          porMes={byMonth}
+          pix={settings?.pix_key ?? null}
+        />
       )}
 
       {months.length ? (

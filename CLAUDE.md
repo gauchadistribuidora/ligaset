@@ -212,6 +212,12 @@ dupla, quem fica para o churrasco, falta confirmar e ausentes — com a observac
 pedindo para confirmar presenca e marcar a carne. Tem versao para imprimir e versao
 em texto para o WhatsApp.
 
+### Relatorio de mensalidades para o grupo
+`RelatorioMensalidades` monta o texto do mes (em dia / falta pagar, com valores e o
+Pix) para colar no WhatsApp, com previa antes de mandar. **Nao virou pagina publica de
+proposito:** quem deve o que nao precisa ficar num endereco aberto na internet — o
+texto vai para o grupo, que ja e o circulo certo.
+
 ### Origem dos recebimentos
 O "Arrecadado" soma dois mundos — cobranca paga (`payments`) e receita lancada a mao
 (`revenues`) — e o relatorio so detalhava o segundo, entao parte do dinheiro aparecia
