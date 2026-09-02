@@ -243,23 +243,63 @@ export async function buildReport(
         return pagoA - pagoB || nome(a).localeCompare(nome(b), "pt-BR");
       });
     }
+    // Quando a lista toda e do mesmo mes (ou do mesmo vencimento), a coluna
+    // repete o mesmo valor 46 vezes: a informacao sobe para o cabecalho e a
+    // coluna sai. Com varios meses na tela, as colunas ficam — sem elas ninguem
+    // saberia de que mes e cada linha.
+    const meses = new Set<string>(
+      list.map((p: any) => String(p.reference_month))
+    );
+    const vencimentos = new Set<string>(
+      list.filter((p: any) => p.due_date).map((p: any) => String(p.due_date))
+    );
+    const mesUnico: string | null = meses.size === 1 ? [...meses][0] : null;
+    const vencUnico: string | null =
+      vencimentos.size === 1 ? [...vencimentos][0] : null;
+
+    const colunas = columns.filter((c) => {
+      if (c.key === "ref" && mesUnico) return false;
+      if (c.key === "venc" && vencUnico) return false;
+      return true;
+    });
+
     const rows = list.map((p: any) => {
       const eff = effStatus(p);
       const base: any = {
         atleta: nameMap[p.member_id] || "Jogador",
-        ref: monthLabel(p.reference_month),
         valor: brl(p.amount),
-        venc: shortDate(p.due_date),
         status: PAYMENT_LABEL[eff] || eff,
       };
+      if (!mesUnico) base.ref = monthLabel(p.reference_month);
+      if (!vencUnico) base.venc = shortDate(p.due_date);
       if (key === "atrasadas") base.dias = p.due_date ? daysLate(p.due_date) : 0;
       else base.pago = p.paid_at ? shortDate(p.paid_at) : "—";
       return base;
     });
+
+    const diaMesAno = (d: string) => {
+      const [a, m, dia] = String(d).slice(0, 10).split("-");
+      return `${dia}/${m}/${a}`;
+    };
+
+    const titulo = [
+      key === "atrasadas" ? "Mensalidades em atraso" : "Mensalidades",
+      mesUnico ? monthLabel(mesUnico) : null,
+    ]
+      .filter(Boolean)
+      .join(" — ");
+
+    const legenda = [
+      vencUnico ? `Vencimento: ${diaMesAno(vencUnico)}` : null,
+      `${rows.length} registro(s)`,
+    ]
+      .filter(Boolean)
+      .join(" • ");
+
     return {
-      title: key === "atrasadas" ? "Mensalidades em atraso" : "Mensalidades",
-      subtitle: `${rows.length} registro(s)`,
-      sections: [{ columns, rows }],
+      title: titulo,
+      subtitle: legenda,
+      sections: [{ columns: colunas, rows }],
     };
   }
 
