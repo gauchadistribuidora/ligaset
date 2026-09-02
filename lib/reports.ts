@@ -58,6 +58,15 @@ export function inicioDoPeriodo(p?: string): string | null {
 }
 
 // Quais relatórios fazem sentido filtrar por período.
+// Filtro de situacao: so faz sentido onde ha pago e pendente na mesma lista.
+export const SITUACOES: { key: string; label: string }[] = [
+  { key: "todas", label: "Todas" },
+  { key: "pendentes", label: "Pendentes" },
+  { key: "pagas", label: "Pagas" },
+];
+
+export const REPORTS_COM_SITUACAO = new Set(["mensalidades"]);
+
 export const REPORTS_COM_PERIODO = new Set([
   "convidados",
   "mensalidades",
@@ -184,7 +193,11 @@ export async function buildReport(
   supabase: any,
   groupId: string,
   key: string,
-  opts: { tournamentId?: string; desde?: string | null } = {}
+  opts: {
+    tournamentId?: string;
+    desde?: string | null;
+    situacao?: string | null;
+  } = {}
 ): Promise<ReportDoc | null> {
   const nameMap = await nameMapOf(supabase, groupId);
 
@@ -210,6 +223,25 @@ export async function buildReport(
       list.sort((a: any, b: any) => daysLate(b.due_date) - daysLate(a.due_date));
     } else {
       columns.push({ key: "pago", label: "Pago em", align: "center" });
+
+      if (opts.situacao === "pagas") {
+        list = list.filter((p: any) => p.status === "paid");
+      } else if (opts.situacao === "pendentes") {
+        list = list.filter((p: any) => p.status !== "paid");
+      }
+
+      // Pagos primeiro, pendentes embaixo, cada bloco em ordem alfabetica —
+      // dentro do mesmo mes de referencia, que continua sendo o agrupador.
+      const nome = (p: any) => nameMap[p.member_id] || "Jogador";
+      list = [...list].sort((a: any, b: any) => {
+        const porMes = String(b.reference_month).localeCompare(
+          String(a.reference_month)
+        );
+        if (porMes !== 0) return porMes;
+        const pagoA = a.status === "paid" ? 0 : 1;
+        const pagoB = b.status === "paid" ? 0 : 1;
+        return pagoA - pagoB || nome(a).localeCompare(nome(b), "pt-BR");
+      });
     }
     const rows = list.map((p: any) => {
       const eff = effStatus(p);

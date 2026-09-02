@@ -8,6 +8,8 @@ import {
   PERIODOS,
   REPORTS,
   REPORTS_COM_PERIODO,
+  REPORTS_COM_SITUACAO,
+  SITUACOES,
 } from "@/lib/reports";
 import { shortDate } from "@/lib/format";
 import { notFound } from "next/navigation";
@@ -22,12 +24,13 @@ export default async function ReportPage({
   searchParams,
 }: {
   params: Promise<{ id: string; report: string }>;
-  searchParams: Promise<{ t?: string; p?: string }>;
+  searchParams: Promise<{ t?: string; p?: string; s?: string }>;
 }) {
   const { id, report } = await params;
   const sp = await searchParams;
   const t = typeof sp?.t === "string" ? sp.t : undefined;
   const periodo = PERIODOS.some((x) => x.key === sp?.p) ? sp!.p! : "tudo";
+  const situacao = SITUACOES.some((x) => x.key === sp?.s) ? sp!.s! : "todas";
 
   const { supabase, group, isAdmin } = await getGroupContext(id);
   if (!isAdmin) notFound();
@@ -78,6 +81,7 @@ export default async function ReportPage({
   const doc = await buildReport(supabase, id, report, {
     tournamentId: t,
     desde: temPeriodo ? inicioDoPeriodo(periodo) : null,
+    situacao,
   });
   if (!doc) notFound();
 
@@ -94,10 +98,28 @@ export default async function ReportPage({
           {PERIODOS.map((x) => (
             <Link
               key={x.key}
-              href={`/app/groups/${id}/relatorios/${report}?p=${x.key}`}
+              href={`/app/groups/${id}/relatorios/${report}?p=${x.key}&s=${situacao}`}
               className={`whitespace-nowrap rounded-full px-4 py-2 text-sm font-semibold transition ${
                 periodo === x.key
                   ? "bg-ocean-900 text-white"
+                  : "bg-white text-slate-500 ring-1 ring-slate-200"
+              }`}
+            >
+              {x.label}
+            </Link>
+          ))}
+        </div>
+      )}
+
+      {REPORTS_COM_SITUACAO.has(report) && (
+        <div className="mb-4 flex gap-2 overflow-x-auto pb-1 no-scrollbar">
+          {SITUACOES.map((x) => (
+            <Link
+              key={x.key}
+              href={`/app/groups/${id}/relatorios/${report}?p=${periodo}&s=${x.key}`}
+              className={`whitespace-nowrap rounded-full px-4 py-2 text-sm font-semibold transition ${
+                situacao === x.key
+                  ? "bg-court-500 text-white"
                   : "bg-white text-slate-500 ring-1 ring-slate-200"
               }`}
             >
