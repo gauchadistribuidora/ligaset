@@ -212,6 +212,14 @@ dupla, quem fica para o churrasco, falta confirmar e ausentes — com a observac
 pedindo para confirmar presenca e marcar a carne. Tem versao para imprimir e versao
 em texto para o WhatsApp.
 
+### Pagina publica das mensalidades
+`/mensalidades/<codigo>` (`payment_links` + `public_payments_month`): quem esta em
+dia, quem falta e o botao **Pagar**, que abre o QR do Pix com o valor daquela pessoa.
+Um link por mes, com sufixo aleatorio. A RPC devolve so nome, valor e situacao — sem
+contato e **sem id de pessoa**, entao a pagina nao serve para cruzar dados. O Henrique
+pediu isso depois de eu levantar a ressalva de expor debito em endereco aberto; o texto
+do WhatsApp continua sendo a opcao mais discreta.
+
 ### Relatorio de mensalidades para o grupo
 `RelatorioMensalidades` monta o texto do mes (em dia / falta pagar, com valores e o
 Pix) para colar no WhatsApp, com previa antes de mandar. **Nao virou pagina publica de

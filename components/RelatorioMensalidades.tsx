@@ -1,16 +1,19 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useTransition } from "react";
+import { linkDasMensalidades } from "@/app/actions/mensalidades";
 import { brl, monthLabel } from "@/lib/format";
 
 // Texto pronto para colar no grupo. Nao virou pagina publica de proposito:
 // quem deve o que nao precisa ficar num endereco aberto na internet.
 export default function RelatorioMensalidades({
+  groupId,
   grupo,
   meses,
   porMes,
   pix,
 }: {
+  groupId: string;
   grupo: string;
   meses: string[];
   porMes: Record<string, any[]>;
@@ -18,7 +21,13 @@ export default function RelatorioMensalidades({
 }) {
   const [aberto, setAberto] = useState(false);
   const [mes, setMes] = useState(meses[0] ?? "");
-  const [copiado, setCopiado] = useState(false);
+  const [copiado, setCopiado] = useState<"texto" | "link" | null>(null);
+  const [pending, start] = useTransition();
+  const [erro, setErro] = useState<string | null>(null);
+  // O link e por mes: cada mes tem o seu.
+  const [links, setLinks] = useState<Record<string, string>>({});
+  const origem = typeof window !== "undefined" ? window.location.origin : "";
+  const link = links[mes] ? `${origem}/mensalidades/${links[mes]}` : null;
 
   const nomeDe = (p: any) =>
     p.member?.name || p.member?.profile?.full_name || "Jogador";
@@ -105,15 +114,15 @@ export default function RelatorioMensalidades({
           onClick={async () => {
             try {
               await navigator.clipboard.writeText(texto);
-              setCopiado(true);
-              setTimeout(() => setCopiado(false), 2500);
+              setCopiado("texto");
+              setTimeout(() => setCopiado(null), 2500);
             } catch {
               /* sem area de transferencia: sobra o botao do WhatsApp */
             }
           }}
           className="btn-ghost !py-2 text-sm"
         >
-          {copiado ? "Copiado! ✓" : "Copiar texto"}
+          {copiado === "texto" ? "Copiado! ✓" : "Copiar texto"}
         </button>
         <a
           href={`https://wa.me/?text=${encodeURIComponent(texto)}`}
@@ -128,6 +137,59 @@ export default function RelatorioMensalidades({
       <p className="text-xs text-slate-400">
         Os nomes com asterisco aparecem em negrito no WhatsApp.
       </p>
+
+      {/* Alem do texto, a pagina onde quem deve paga na hora pelo QR. */}
+      <div className="rounded-xl bg-court-50 p-3">
+        <p className="text-xs font-semibold text-slate-600">
+          🔗 Página do mês, com botão de pagar
+        </p>
+        {link ? (
+          <>
+            <p className="mt-1 break-all text-xs text-slate-500">{link}</p>
+            <div className="mt-2 flex flex-wrap items-center gap-3">
+              <button
+                onClick={async () => {
+                  try {
+                    await navigator.clipboard.writeText(link);
+                    setCopiado("link");
+                    setTimeout(() => setCopiado(null), 2500);
+                  } catch {
+                    setErro("Não consegui copiar. Copie o link na mão.");
+                  }
+                }}
+                className="text-xs font-bold text-court-600"
+              >
+                {copiado === "link" ? "Copiado! ✓" : "Copiar link"}
+              </button>
+              <a
+                href={`https://wa.me/?text=${encodeURIComponent(link)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs font-bold text-court-600"
+              >
+                WhatsApp
+              </a>
+            </div>
+          </>
+        ) : (
+          <button
+            disabled={pending}
+            onClick={() => {
+              setErro(null);
+              start(async () => {
+                const res = await linkDasMensalidades(groupId, mes);
+                if (res?.error) setErro(res.error);
+                else if (res?.code)
+                  setLinks((v) => ({ ...v, [mes]: res.code as string }));
+              });
+            }}
+            className="mt-2 text-xs font-bold text-court-600"
+          >
+            {pending ? "Gerando..." : "Gerar link do mês"}
+          </button>
+        )}
+        {erro && <p className="mt-1 text-xs text-rose-500">{erro}</p>}
+      </div>
     </div>
   );
 }

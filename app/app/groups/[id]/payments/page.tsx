@@ -380,6 +380,7 @@ export default async function PaymentsPage({
 
       {isAdmin && months.length > 0 && (
         <RelatorioMensalidades
+          groupId={id}
           grupo={group.name}
           meses={months}
           porMes={byMonth}
