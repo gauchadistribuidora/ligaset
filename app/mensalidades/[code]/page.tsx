@@ -1,9 +1,18 @@
 import type { Metadata } from "next";
+import Image from "next/image";
+import { existsSync } from "fs";
+import path from "path";
 import { createClient } from "@/lib/supabase/server";
 import { brl, monthLabel } from "@/lib/format";
 import ListaPagamentoPublica from "@/components/ListaPagamentoPublica";
 
 export const dynamic = "force-dynamic";
+
+// Figurinha do grupo na previa e no topo da pagina. Fica em public/ e so
+// aparece se o arquivo existir — grupo sem figurinha nao ganha imagem quebrada.
+const FIGURINHA = "/cobranca.png";
+const temFigurinha = () =>
+  existsSync(path.join(process.cwd(), "public", "cobranca.png"));
 
 async function buscar(code: string) {
   const supabase = await createClient();
@@ -42,7 +51,7 @@ export async function generateMetadata({
       description: descricao,
       siteName: "Ligaset",
       type: "website",
-      images: ["/icon-512.png"],
+      images: [temFigurinha() ? FIGURINHA : "/icon-512.png"],
     },
     twitter: { card: "summary", title: titulo, description: descricao },
   };
@@ -80,6 +89,21 @@ export default async function MensalidadesPage({
         .filter(Boolean)
         .join(" • ")}
     >
+      {temFigurinha() && (
+        // A arte vem com fundo preto gravado. Numa faixa escura ele vira parte
+        // do desenho, em vez de um retangulo solto no meio da pagina branca.
+        <div className="mb-4 overflow-hidden rounded-xl bg-black">
+          <Image
+            src={FIGURINHA}
+            alt=""
+            width={1254}
+            height={1254}
+            className="mx-auto h-auto w-48 max-w-full"
+            priority
+          />
+        </div>
+      )}
+
       <ListaPagamentoPublica
         gente={info.gente ?? []}
         grupo={info.grupo}
