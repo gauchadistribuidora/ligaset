@@ -90,18 +90,16 @@ export default async function MensalidadesPage({
         .join(" • ")}
     >
       {temFigurinha() && (
-        // A arte vem com fundo preto gravado. Numa faixa escura ele vira parte
-        // do desenho, em vez de um retangulo solto no meio da pagina branca.
-        <div className="mb-4 overflow-hidden rounded-xl bg-black">
-          <Image
-            src={FIGURINHA}
-            alt=""
-            width={1254}
-            height={1254}
-            className="mx-auto h-auto w-48 max-w-full"
-            priority
-          />
-        </div>
+        // Sem moldura: a arte ja vem com o fundo dela, e qualquer faixa atras
+        // vira tarja nas laterais.
+        <Image
+          src={FIGURINHA}
+          alt=""
+          width={1254}
+          height={1254}
+          className="mx-auto mb-4 h-auto w-48 max-w-full"
+          priority
+        />
       )}
 
       <ListaPagamentoPublica
