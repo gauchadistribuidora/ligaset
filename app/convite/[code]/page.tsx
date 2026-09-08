@@ -3,6 +3,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { brl, shortDate } from "@/lib/format";
 import ConviteConfirm from "@/components/ConviteConfirm";
+import ConviteEntrar from "@/components/ConviteEntrar";
 import PixQR from "@/components/PixQR";
 
 export const dynamic = "force-dynamic";
@@ -119,18 +120,18 @@ export default async function ConvitePage({
         {user ? (
           <ConviteConfirm code={code} atletas={info.atletas ?? []} />
         ) : (
-          <div className="grid gap-2">
-            <Link href="/criar-conta" className="btn-primary w-full">
-              Criar conta e confirmar
-            </Link>
-            <Link href="/login" className="btn-ghost w-full">
-              Já tenho conta
-            </Link>
-            <p className="text-center text-xs text-slate-400">
-              Depois de entrar, abra este link de novo para confirmar sua
-              presença.
-            </p>
-          </div>
+          <>
+            <ConviteEntrar code={code} atletas={info.atletas ?? []} />
+
+            <div className="mt-4 border-t border-slate-100 pt-3">
+              <p className="text-center text-xs text-slate-400">
+                Já joga em outro grupo do Ligaset?{" "}
+                <Link href="/login" className="font-semibold text-court-600">
+                  Entre na sua conta
+                </Link>
+              </p>
+            </div>
+          </>
         )}
       </div>
     </Moldura>
