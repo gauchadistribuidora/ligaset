@@ -99,6 +99,13 @@ export default function PublicAttendance({
       p_nome: nome,
     });
 
+  const convidar = (nome: string, host: string) =>
+    chamar("public_add_guest", {
+      p_code: code,
+      p_nome: nome,
+      p_host: host,
+    });
+
   const marcarChurrasco = (memberId: string, sim: boolean) =>
     chamar("public_set_churrasco", {
       p_code: code,
@@ -365,6 +372,59 @@ export default function PublicAttendance({
           </section>
         );
       })}
+
+      {/* Bloco proprio: antes so dava para convidar de dentro do seletor de
+          dupla, o que exigia o anfitriao estar sem par. */}
+      <form
+        action={(fd) => {
+          const nome = String(fd.get("convidado") || "").trim();
+          const host = String(fd.get("host") || "");
+          if (!nome) {
+            setError("Escreva o nome do convidado.");
+            return;
+          }
+          if (!host) {
+            setError("Diga quem está trazendo o convidado.");
+            return;
+          }
+          convidar(nome, host);
+        }}
+        className="rounded-xl bg-court-50 p-3"
+      >
+        <p className="text-xs font-semibold text-slate-600">
+          🙋 Vai levar um convidado?
+        </p>
+        <div className="mt-2 space-y-2">
+          <input
+            name="convidado"
+            placeholder="Nome do convidado"
+            maxLength={60}
+            className="input"
+          />
+          <select name="host" defaultValue="" className="input">
+            <option value="" disabled>
+              Quem está trazendo?
+            </option>
+            {lista
+              .filter((m) => !m.is_guest)
+              .map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.name ?? "Atleta"}
+                </option>
+              ))}
+          </select>
+          <button
+            disabled={pending}
+            className="btn-primary w-full !py-2 text-sm"
+          >
+            {pending ? "Adicionando..." : "Adicionar à lista"}
+          </button>
+        </div>
+        <p className="mt-2 text-xs text-slate-400">
+          Ele entra já confirmado. A dupla dá para escolher depois, na linha
+          dele.
+        </p>
+      </form>
 
       {churrasco && (
         <form

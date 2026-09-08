@@ -279,6 +279,13 @@ por isso `attendance.status` virou anulável: existe linha só de churrasco. Que
 presença filtra `status = 'yes'`, então branco não conta e o convidado só-da-carne
 não entra no sorteio. `public_add_churrasco_guest` cadastra quem vem só comer.
 
+### Regra do link de confirmacao
+**Todo link de confirmacao (`/jogo/<code>`) sempre traz as tres coisas:** marcar
+presenca, **escolher a dupla** e **convidar alguem de fora** (bloco proprio no fim,
+`public_add_guest`). Convidar nao depende de formar dupla — o caminho antigo exigia o
+anfitriao estar sem par e travava quem so queria trazer alguem. Quem traz e sempre
+identificado: sem anfitriao a funcao recusa, senao ninguem responde pela cobranca.
+
 ### Dupla declarada na confirmação
 A lista sai em quatro blocos: confirmados com dupla, confirmados sem dupla, falta
 confirmar, estão fora (a espera segue marcada dentro dos confirmados, pela hora da
