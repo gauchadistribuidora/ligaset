@@ -103,6 +103,49 @@ export async function setTournamentCapacity(
   return { ok: true };
 }
 
+// Escolhe a dupla dentro do app. Reaproveita a mesma funcao do link publico
+// para as regras (reciproca, exclusiva, libera o parceiro antigo) morarem num
+// lugar so — duplicar isso em dois caminhos e receita de divergencia.
+export async function setPartner(
+  groupId: string,
+  tournamentId: string,
+  memberId: string,
+  partnerId: string | null
+) {
+  const ctx = await ctxFor(groupId);
+  if (!ctx) return { error: "Sem permissão." };
+  if (!ctx.isAdmin && memberId !== ctx.memberId) {
+    return { error: "Você só pode escolher a sua dupla." };
+  }
+
+  const { data: t } = await ctx.supabase
+    .from("tournaments")
+    .select("confirm_code, confirmations_open")
+    .eq("id", tournamentId)
+    .eq("group_id", groupId)
+    .maybeSingle();
+
+  if (!t?.confirmations_open) {
+    return { error: "A lista deste jogo está fechada." };
+  }
+  if (!t?.confirm_code) {
+    return { error: "Abra a lista de presença antes de formar duplas." };
+  }
+
+  const { data, error } = await ctx.supabase.rpc("public_set_partner", {
+    p_code: t.confirm_code,
+    p_member: memberId,
+    p_partner: partnerId,
+  });
+  const r = data as any;
+  if (error || r?.error) {
+    return { error: r?.error ?? "Não consegui salvar. Tente de novo." };
+  }
+
+  revalidatePath(`/app/groups/${groupId}/tournaments/${tournamentId}`);
+  return { ok: true };
+}
+
 // Marca ou desmarca alguém no churrasco. Cada um responde por si; o
 // administrador responde por qualquer um. É independente do jogo: quem não vai
 // jogar também come.

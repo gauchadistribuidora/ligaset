@@ -5,6 +5,7 @@ import {
   ratearChurrasco,
   setAttendance,
   setChurrasco,
+  setPartner,
   setTournamentCapacity,
   toggleChurrasco,
   toggleConfirmations,
@@ -60,6 +61,8 @@ export default function AttendanceList({
   const [codigoConvite, setCodigoConvite] = useState(guestCode);
   const [vagas, setVagas] = useState(capacity);
   const [editandoVagas, setEditandoVagas] = useState(false);
+  // Quem esta com o seletor de dupla aberto.
+  const [escolhendo, setEscolhendo] = useState<string | null>(null);
   const [abrirRateio, setAbrirRateio] = useState(false);
   const [rateioOk, setRateioOk] = useState<{
     porPessoa: number;
@@ -196,6 +199,24 @@ export default function AttendanceList({
   const conviteLink = codigoConvite ? `${origem}/convite/${codigoConvite}` : null;
   // Página aberta, só leitura: quem recebe vê tudo sem poder mexer.
   const resumoLink = slug || confirmCode ? `${origem}/resumo/${slug ?? confirmCode}` : null;
+
+  const definirDupla = (memberId: string, partnerId: string | null) => {
+    setError(null);
+    start(async () => {
+      const res = await setPartner(groupId, tournamentId, memberId, partnerId);
+      if (res?.error) setError(res.error);
+      else setEscolhendo(null);
+    });
+  };
+
+  // Quem ainda pode ser escolhido: confirmou e nao tem par.
+  const livres = (paraQuem: string) =>
+    members
+      .filter(
+        (m) =>
+          m.id !== paraQuem && answers[m.id] === "yes" && !partners[m.id]
+      )
+      .sort(alfabetica);
 
   const marcarChurrasco = (memberId: string, sim: boolean) => {
     setError(null);
@@ -733,11 +754,56 @@ Pix: ${
                     convidado
                   </p>
                 )}
-                {partners[m.id] && (
+                {partners[m.id] ? (
                   <p className="truncate text-xs font-semibold text-court-600">
                     🤝 com{" "}
                     {members.find((x) => x.id === partners[m.id])?.name ??
                       "atleta"}
+                    {(isAdmin || m.id === myMemberId) && (
+                      <button
+                        disabled={pending}
+                        onClick={() => definirDupla(m.id, null)}
+                        className="ml-2 font-semibold text-slate-400"
+                      >
+                        desfazer
+                      </button>
+                    )}
+                  </p>
+                ) : answers[m.id] === "yes" &&
+                  (isAdmin || m.id === myMemberId) ? (
+                  <button
+                    disabled={pending}
+                    onClick={() =>
+                      setEscolhendo((v) => (v === m.id ? null : m.id))
+                    }
+                    className="text-xs font-semibold text-court-600 underline"
+                  >
+                    escolher dupla
+                  </button>
+                ) : null}
+
+                {escolhendo === m.id && (
+                  <select
+                    defaultValue=""
+                    disabled={pending}
+                    onChange={(e) =>
+                      e.target.value && definirDupla(m.id, e.target.value)
+                    }
+                    className="input mt-1 !py-1 text-sm"
+                  >
+                    <option value="" disabled>
+                      Vai jogar com...
+                    </option>
+                    {livres(m.id).map((o) => (
+                      <option key={o.id} value={o.id}>
+                        {o.name ?? "Sem nome"}
+                      </option>
+                    ))}
+                  </select>
+                )}
+                {escolhendo === m.id && !livres(m.id).length && (
+                  <p className="mt-1 text-xs text-slate-400">
+                    Todos os confirmados já têm dupla.
                   </p>
                 )}
                 {hasChurrasco && churrascoOf[m.id] && (
