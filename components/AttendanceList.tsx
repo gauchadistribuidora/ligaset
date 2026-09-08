@@ -684,7 +684,7 @@ Pix: ${
                   : "bg-white text-slate-600 ring-1 ring-slate-200"
               }`}
             >
-              ✅ Vou
+              {answers[myMemberId] === "yes" ? "✅ Estou dentro" : "✅ Vou"}
             </button>
             <button
               disabled={pending}
