@@ -276,7 +276,7 @@ export default function PublicAttendance({
                         : "bg-white text-slate-500 ring-1 ring-slate-200"
                     }`}
                   >
-                    {m.status === "yes" ? "Estou dentro" : "Vou"}
+                    {m.status === "yes" ? "Confirmado" : "Vou"}
                   </button>
                   <button
                     disabled={pending}
