@@ -261,14 +261,58 @@ export async function updateMember(
   revalidatePath(`/app/groups/${groupId}/members`);
 }
 
+// Tirar alguem do grupo nunca pode mexer no que ja aconteceu: pagamento,
+// presenca, pneu e jogo disputado valem por si. Quem tem historico e
+// ARQUIVADO — some das listas, mas continua no caixa e nos relatorios. So quem
+// nunca fez nada e apagado de vez, porque ai nao ha o que preservar.
 export async function removeMember(groupId: string, memberId: string) {
   const supabase = await createClient();
+
+  const [{ count: pagamentos }, { count: presencas }, { count: pneus }, { count: times }] =
+    await Promise.all([
+      supabase
+        .from("payments")
+        .select("id", { count: "exact", head: true })
+        .eq("member_id", memberId),
+      supabase
+        .from("attendance")
+        .select("id", { count: "exact", head: true })
+        .eq("member_id", memberId),
+      supabase
+        .from("pneus")
+        .select("id", { count: "exact", head: true })
+        .eq("member_id", memberId),
+      supabase
+        .from("teams")
+        .select("id", { count: "exact", head: true })
+        .or(`player1_id.eq.${memberId},player2_id.eq.${memberId}`),
+    ]);
+
+  const temHistorico =
+    (pagamentos ?? 0) > 0 ||
+    (presencas ?? 0) > 0 ||
+    (pneus ?? 0) > 0 ||
+    (times ?? 0) > 0;
+
+  if (temHistorico) {
+    const { error } = await supabase
+      .from("group_members")
+      .update({ status: "inactive" })
+      .eq("id", memberId)
+      .eq("group_id", groupId);
+    if (error) throw new Error(error.message);
+    revalidatePath(`/app/groups/${groupId}/members`);
+    return { ok: true, arquivado: true, pagamentos: pagamentos ?? 0 };
+  }
+
   const { error } = await supabase
     .from("group_members")
     .delete()
-    .eq("id", memberId);
+    .eq("id", memberId)
+    .eq("group_id", groupId);
   if (error) throw new Error(error.message);
   revalidatePath(`/app/groups/${groupId}/members`);
+  return { ok: true, arquivado: false };
 }
 
 export async function inviteEmails(

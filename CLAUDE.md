@@ -194,6 +194,13 @@ atletas e cada um vota em um so (chave primaria `(poll_id, voter_id)` — trocar
 ideia troca o voto, nao soma outro). Todo mundo ve o resultado; a RLS so aceita voto
 do proprio membro e com a enquete aberta.
 
+### Tirar membro nao apaga historico
+`payments.member_id` e **ON DELETE RESTRICT**: o banco recusa apagar quem tem
+pagamento. `removeMember` **arquiva** (`status = 'inactive'`) quem tem pagamento,
+presenca, pneu ou jogo — some das listas (todas filtram `active`) e continua no caixa
+e nos relatorios; so apaga de vez quem nao tem nada. A trava mora no banco de
+proposito: tela nova ou script futuro herda a regra sem precisar lembrar dela.
+
 ### Painel do mensalista
 No financeiro, `PainelMensalista` mostra quem esta em dia, quem deve, quanto e desde
 quando, com o botao de cobrar os devedores pelo WhatsApp. Convidado nao entra

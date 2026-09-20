@@ -106,8 +106,15 @@ export default function MemberRow({
             <button
               disabled={pending}
               onClick={() => {
-                if (confirm("Remover este jogador do grupo?"))
-                  start(() => removeMember(groupId, member.id));
+                if (
+                  !confirm(
+                    "Tirar este jogador do grupo? Se ele já tem histórico — pagamento, presença, pneu ou jogo —, fica arquivado: some das listas, mas o que já aconteceu continua no caixa e nos relatórios."
+                  )
+                )
+                  return;
+                start(async () => {
+                  await removeMember(groupId, member.id);
+                });
               }}
               className="rounded-lg px-2 py-1 text-xs text-rose-500"
             >
