@@ -37,10 +37,16 @@ export default async function MembersPage({
     (a.name ?? "").localeCompare(b.name ?? "", "pt-BR")
   );
 
+  // Quem foi tirado do grupo fica arquivado para preservar pagamento e
+  // historico — mas nao pode continuar na lista, senao parece que o botao de
+  // excluir nao funcionou.
+  const naLista = ordenados.filter((m: any) => m.status === "active");
+  const arquivados = ordenados.filter((m: any) => m.status !== "active");
+
   // Duas listas separadas: quem o grupo cadastrou e quem entrou como convidado
   // de um jogo. Misturados, os convidados escondiam os mensalistas no meio.
-  const fixos = ordenados.filter((m: any) => !m.is_guest);
-  const convidados = ordenados.filter((m: any) => m.is_guest);
+  const fixos = naLista.filter((m: any) => !m.is_guest);
+  const convidados = naLista.filter((m: any) => m.is_guest);
 
   return (
     <div className="space-y-4">
@@ -89,6 +95,21 @@ export default async function MembersPage({
             ))}
           </div>
         </>
+      )}
+
+      {isAdmin && arquivados.length > 0 && (
+        <details className="px-1">
+          <summary className="cursor-pointer text-xs font-semibold text-slate-400">
+            🗄️ {arquivados.length} arquivado(s) — clique para ver
+          </summary>
+          <p className="mt-1 text-xs leading-relaxed text-slate-500">
+            {arquivados.map((m: any) => m.name || "Sem nome").join(", ")}
+          </p>
+          <p className="mt-1 text-xs text-slate-400">
+            Saíram do grupo, mas o pagamento e o histórico deles continuam no
+            caixa e nos relatórios.
+          </p>
+        </details>
       )}
 
       <p className="px-1 text-xs text-slate-400">
