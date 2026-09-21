@@ -286,11 +286,17 @@ por isso `attendance.status` virou anulável: existe linha só de churrasco. Que
 presença filtra `status = 'yes'`, então branco não conta e o convidado só-da-carne
 não entra no sorteio. `public_add_churrasco_guest` cadastra quem vem só comer.
 
+### Membros x convidados na tela de Membros
+Duas listas separadas: **Membros** (quem o grupo cadastrou) e **Membros convidados**
+(entraram pelo link de um jogo). Misturados, os convidados escondiam os mensalistas.
+
 ### Convidado vale para UM jogo
 Convidado vira membro do grupo, entao aparecia em **todos** os jogos seguintes na
 lista de quem nao respondeu. A regra: **convidado so aparece no jogo em que ESTA
 DENTRO** — `status = 'yes'` ou churrasco marcado. Ter qualquer resposta nao basta:
-marcar "nao" para convidado de outra semana o MANTINHA na lista (aconteceu com 32). Para jogar de novo, precisa ser convidado de novo. Vale nas duas RPCs
+marcar "nao" para convidado de outra semana o MANTINHA na lista (aconteceu com 32). Para jogar de novo, precisa ser convidado de novo — e **convidar o mesmo nome
+reaproveita o cadastro** (`public_add_guest`), em vez de criar outra pessoa: sem isso,
+quem estava como "nao" virava cadastro repetido a cada tentativa de traze-lo de volta. Vale nas duas RPCs
 publicas, na tela do torneio e no relatorio. **Nunca apaga:** ele continua no grupo,
 no historico e no financeiro — some so das listas dos jogos que nao sao dele.
 

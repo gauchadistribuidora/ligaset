@@ -37,6 +37,11 @@ export default async function MembersPage({
     (a.name ?? "").localeCompare(b.name ?? "", "pt-BR")
   );
 
+  // Duas listas separadas: quem o grupo cadastrou e quem entrou como convidado
+  // de um jogo. Misturados, os convidados escondiam os mensalistas no meio.
+  const fixos = ordenados.filter((m: any) => !m.is_guest);
+  const convidados = ordenados.filter((m: any) => m.is_guest);
+
   return (
     <div className="space-y-4">
       {isAdmin && <GroupNoticeForm groupId={id} />}
@@ -46,8 +51,11 @@ export default async function MembersPage({
       {isAdmin && <AddMemberForm groupId={id} />}
       {isAdmin && <InviteBox groupId={id} />}
 
+      <h3 className="px-1 font-bold text-slate-800">
+        👥 Membros ({fixos.length})
+      </h3>
       <div className="card divide-y divide-slate-100 !p-0">
-        {ordenados.map((m: any) => (
+        {fixos.map((m: any) => (
           <MemberRow
             key={m.id}
             groupId={id}
@@ -59,8 +67,32 @@ export default async function MembersPage({
         ))}
       </div>
 
+      {convidados.length > 0 && (
+        <>
+          <h3 className="!mt-6 px-1 font-bold text-slate-800">
+            🙋 Membros convidados ({convidados.length})
+          </h3>
+          <p className="px-1 text-xs text-slate-400">
+            Entraram pelo link de um jogo. Cada convite vale para aquele jogo:
+            para voltar, precisam ser convidados de novo.
+          </p>
+          <div className="card divide-y divide-slate-100 !p-0">
+            {convidados.map((m: any) => (
+              <MemberRow
+                key={m.id}
+                groupId={id}
+                member={m}
+                canManage={isAdmin}
+                isOwnerRow={false}
+                visitas={visitas[m.id] ?? 0}
+              />
+            ))}
+          </div>
+        </>
+      )}
+
       <p className="px-1 text-xs text-slate-400">
-        {ordenados.length} jogador(es). Basta nome e telefone para
+        {fixos.length} membro(s) e {convidados.length} convidado(s). Basta nome e telefone para
         cadastrar. Adicione um e-mail e use “Convidar” quando quiser dar acesso
         ao app.
       </p>
