@@ -315,6 +315,21 @@ export async function removeMember(groupId: string, memberId: string) {
   return { ok: true, arquivado: false };
 }
 
+// Desfaz o arquivamento. Sem isso, tirar alguem por engano era caminho sem
+// volta pela tela — foi o que aconteceu com um convidado que precisava estar
+// na lista do jogo.
+export async function reactivateMember(groupId: string, memberId: string) {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("group_members")
+    .update({ status: "active" })
+    .eq("id", memberId)
+    .eq("group_id", groupId);
+  if (error) throw new Error(error.message);
+  revalidatePath(`/app/groups/${groupId}/members`);
+  return { ok: true };
+}
+
 export async function inviteEmails(
   groupId: string,
   origin: string,

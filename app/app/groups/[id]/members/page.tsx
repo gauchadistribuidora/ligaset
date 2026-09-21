@@ -4,6 +4,7 @@ import GroupNoticeForm from "@/components/GroupNoticeForm";
 import InviteBox from "@/components/InviteBox";
 import InviteLinkBox from "@/components/InviteLinkBox";
 import MemberRow from "@/components/MemberRow";
+import ReativarMembro from "@/components/ReativarMembro";
 
 export default async function MembersPage({
   params,
@@ -102,12 +103,19 @@ export default async function MembersPage({
           <summary className="cursor-pointer text-xs font-semibold text-slate-400">
             🗄️ {arquivados.length} arquivado(s) — clique para ver
           </summary>
-          <p className="mt-1 text-xs leading-relaxed text-slate-500">
-            {arquivados.map((m: any) => m.name || "Sem nome").join(", ")}
-          </p>
-          <p className="mt-1 text-xs text-slate-400">
+          <div className="mt-2 flex flex-wrap gap-2">
+            {arquivados.map((m: any) => (
+              <ReativarMembro
+                key={m.id}
+                groupId={id}
+                memberId={m.id}
+                nome={m.name || "Sem nome"}
+              />
+            ))}
+          </div>
+          <p className="mt-2 text-xs text-slate-400">
             Saíram do grupo, mas o pagamento e o histórico deles continuam no
-            caixa e nos relatórios.
+            caixa e nos relatórios. Toque no nome para trazer de volta.
           </p>
         </details>
       )}
