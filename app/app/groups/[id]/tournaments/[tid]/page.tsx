@@ -101,6 +101,16 @@ export default async function TournamentDetail({
     if (a.churrasco) churrascoOf[a.member_id] = true;
   }
 
+  // Convidado vale para UM jogo: so aparece neste se tem resposta aqui. Ele
+  // continua no grupo e no financeiro — some apenas das listas dos outros
+  // jogos, que nao sao dele.
+  const respondeuAqui = new Set(
+    (attendanceRows ?? []).map((a: any) => a.member_id)
+  );
+  const membrosDoJogo = (members ?? []).filter(
+    (m: any) => !m.is_guest || respondeuAqui.has(m.id)
+  );
+
   // Duplas já acertadas na lista de confirmação, sem repetir o par.
   const duplasConfirmadas = Array.from(
     new Set(
@@ -223,7 +233,7 @@ export default async function TournamentDetail({
           <AttendanceList
             groupId={id}
             tournamentId={tid}
-            members={(members ?? []).map((m: any) => ({
+            members={membrosDoJogo.map((m: any) => ({
               id: m.id,
               name: m.name,
             }))}
@@ -252,7 +262,7 @@ export default async function TournamentDetail({
         <ParticipantsPicker
           groupId={id}
           tournamentId={tid}
-          members={members ?? []}
+          members={membrosDoJogo}
           selectedIds={selectedIds}
           locked={hasMatches}
         />
@@ -273,7 +283,7 @@ export default async function TournamentDetail({
           duplasConfirmadas={duplasConfirmadas}
           groupId={id}
           tournamentId={tid}
-          members={(members ?? []).map((m: any) => ({
+          members={membrosDoJogo.map((m: any) => ({
             id: m.id,
             name: m.name,
             isGuest: m.is_guest,
@@ -287,7 +297,7 @@ export default async function TournamentDetail({
           duplasConfirmadas={duplasConfirmadas}
           groupId={id}
           tournamentId={tid}
-          members={members ?? []}
+          members={membrosDoJogo}
           teams={teams ?? []}
         />
       )}
@@ -394,7 +404,7 @@ export default async function TournamentDetail({
                                 tournamentId={tid}
                                 teamAId={m.team_a_id}
                                 teamBId={m.team_b_id}
-                                members={members ?? []}
+                                members={membrosDoJogo}
                                 a1={teamsById[m.team_a_id]?.player1?.id}
                                 a2={teamsById[m.team_a_id]?.player2?.id}
                                 b1={teamsById[m.team_b_id]?.player1?.id}

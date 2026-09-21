@@ -37,8 +37,15 @@ export default async function RelatorioTorneioPage({
       .eq("tournament_id", tid),
   ]);
 
+  // Convidado so entra no relatorio do jogo em que foi convidado.
+  const respondeuAqui = new Set(
+    (respostas ?? []).map((a: any) => a.member_id)
+  );
+
   const nomes: Record<string, Pessoa> = {};
-  for (const m of membros ?? []) {
+  for (const m of (membros ?? []).filter(
+    (x: any) => !x.is_guest || respondeuAqui.has(x.id)
+  )) {
     nomes[m.id] = {
       id: m.id,
       nome: m.name || "Sem nome",

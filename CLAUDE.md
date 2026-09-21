@@ -286,6 +286,14 @@ por isso `attendance.status` virou anulável: existe linha só de churrasco. Que
 presença filtra `status = 'yes'`, então branco não conta e o convidado só-da-carne
 não entra no sorteio. `public_add_churrasco_guest` cadastra quem vem só comer.
 
+### Convidado vale para UM jogo
+Convidado vira membro do grupo, entao aparecia em **todos** os jogos seguintes na
+lista de quem nao respondeu. A regra: **convidado so aparece no jogo em que tem
+resposta** (`not is_guest or a.id is not null`), ou seja, naquele em que foi
+convidado. Para jogar de novo, precisa ser convidado de novo. Vale nas duas RPCs
+publicas, na tela do torneio e no relatorio. **Nunca apaga:** ele continua no grupo,
+no historico e no financeiro — some so das listas dos jogos que nao sao dele.
+
 ### Regra do link de confirmacao
 **Todo link de confirmacao (`/jogo/<code>`) sempre traz as tres coisas:** marcar
 presenca, **escolher a dupla** e **convidar alguem de fora** (bloco proprio no fim,
