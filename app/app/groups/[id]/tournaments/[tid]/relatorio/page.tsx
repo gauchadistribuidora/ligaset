@@ -37,14 +37,17 @@ export default async function RelatorioTorneioPage({
       .eq("tournament_id", tid),
   ]);
 
-  // Convidado so entra no relatorio do jogo em que foi convidado.
-  const respondeuAqui = new Set(
-    (respostas ?? []).map((a: any) => a.member_id)
+  // Convidado so entra no relatorio do jogo em que esta dentro: confirmou ou
+  // marcou churrasco. "Nao" de convidado de outra semana nao conta.
+  const dentroDoJogo = new Set(
+    (respostas ?? [])
+      .filter((a: any) => a.status === "yes" || a.churrasco)
+      .map((a: any) => a.member_id)
   );
 
   const nomes: Record<string, Pessoa> = {};
   for (const m of (membros ?? []).filter(
-    (x: any) => !x.is_guest || respondeuAqui.has(x.id)
+    (x: any) => !x.is_guest || dentroDoJogo.has(x.id)
   )) {
     nomes[m.id] = {
       id: m.id,

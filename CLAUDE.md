@@ -288,9 +288,9 @@ não entra no sorteio. `public_add_churrasco_guest` cadastra quem vem só comer.
 
 ### Convidado vale para UM jogo
 Convidado vira membro do grupo, entao aparecia em **todos** os jogos seguintes na
-lista de quem nao respondeu. A regra: **convidado so aparece no jogo em que tem
-resposta** (`not is_guest or a.id is not null`), ou seja, naquele em que foi
-convidado. Para jogar de novo, precisa ser convidado de novo. Vale nas duas RPCs
+lista de quem nao respondeu. A regra: **convidado so aparece no jogo em que ESTA
+DENTRO** — `status = 'yes'` ou churrasco marcado. Ter qualquer resposta nao basta:
+marcar "nao" para convidado de outra semana o MANTINHA na lista (aconteceu com 32). Para jogar de novo, precisa ser convidado de novo. Vale nas duas RPCs
 publicas, na tela do torneio e no relatorio. **Nunca apaga:** ele continua no grupo,
 no historico e no financeiro — some so das listas dos jogos que nao sao dele.
 

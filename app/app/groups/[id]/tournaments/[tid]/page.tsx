@@ -101,14 +101,17 @@ export default async function TournamentDetail({
     if (a.churrasco) churrascoOf[a.member_id] = true;
   }
 
-  // Convidado vale para UM jogo: so aparece neste se tem resposta aqui. Ele
-  // continua no grupo e no financeiro — some apenas das listas dos outros
-  // jogos, que nao sao dele.
-  const respondeuAqui = new Set(
-    (attendanceRows ?? []).map((a: any) => a.member_id)
+  // Convidado vale para UM jogo: so aparece naquele em que ESTA DENTRO —
+  // confirmou ou marcou churrasco. Ter qualquer resposta nao basta: marcar
+  // "nao" para um convidado de outra semana o mantinha na lista, que era
+  // exatamente o que se queria evitar. Ele continua no grupo e no financeiro.
+  const dentroDoJogo = new Set(
+    (attendanceRows ?? [])
+      .filter((a: any) => a.status === "yes" || a.churrasco)
+      .map((a: any) => a.member_id)
   );
   const membrosDoJogo = (members ?? []).filter(
-    (m: any) => !m.is_guest || respondeuAqui.has(m.id)
+    (m: any) => !m.is_guest || dentroDoJogo.has(m.id)
   );
 
   // Duplas já acertadas na lista de confirmação, sem repetir o par.
